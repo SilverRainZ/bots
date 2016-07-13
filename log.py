@@ -14,29 +14,36 @@ logger.setLevel(logging.INFO)
 time_zone = 'Asia/Shanghai'
 json_output = './json'
 
-
+# TODO: Inefficient
 def log(func):
     def warpper(*args, **kw):
-        log = func(*args, **kw) 
-
-        if not log:
+        res = func(*args, **kw)
+        if not res:
             return
-        t = log['channel']
+        t, log = res
 
+        time1 = time.time()
         fname = os.path.join(json_output, t, time.strftime('%Y-%m-%d.json'))
+        logger.debug('Try opening %s' % fname)
         if not os.path.exists(fname):
             with open(fname, 'w') as f:
                 logger.info('New log file: %s' % fname)
+                json.dump([{'TimeZone': time_zone}], f)
 
         logger.debug('Logging: %s' % log)
-        with open(fname, 'a') as f:
-            f.write(json.dumps(log) + '\n')
+        with open(fname, 'r+') as f:
+            j = json.load(f)
+            j.append(log)
+            f.seek(0)
+            json.dump(j, f)
+
+        logger.info('1 message logged, time usage: %s' % (time.time() - time1))
 
     return warpper
 
 
 class LogBot(Bot):
-    targets = ['#lasttest', '#nexttest']
+    targets = ['#archlinux-cn', '#linuxba']
     trig_cmds = ['JOIN', 'PART', 'QUIT', 'NICK', 'PRIVMSG']
 
     def init(self):
@@ -52,55 +59,57 @@ class LogBot(Bot):
             if not os.path.exists(dirname):
                 logger.info('Creating directory "%s"' % dirname)
                 os.makedirs(dirname)
-           
+
 
     def finalize(self):
         pass
 
-
     @log
     def on_join(self, nick, chan):
-        return {
+        return (chan, {
                 'time': time.time(),
                 'command': 'JOIN',
                 'channel': chan,
                 'nick': nick,
-                }
-
+                })
 
     @log
     def on_part(self, nick, chan, reason):
-        return {
+        return (chan, {
                 'time': time.time(),
                 'command': 'PART',
                 'channel': chan,
                 'nick': nick,
                 'reason': reason,
-                }
-
-
-    @log
-    def on_quit(self, nick, reason):
-        # TODO: which channel should get this log :(
-        pass
-
+                })
 
     @log
-    def on_nick(self, nick, new_nick):
-        # TODO: which channel should get this log :(
-        pass
+    def on_quit(self, nick, chan, reason):
+        return (chan, {
+                'time': time.time(),
+                'command': 'QUIT',
+                'nick': nick,
+                'reason': reason,
+                })
 
+    @log
+    def on_nick(self, nick, new_nick, chan):
+        return (chan, {
+                'time': time.time(),
+                'command': 'NICK',
+                'nick': nick,
+                'new_nick': new_nick,
+                })
 
     @log
     def on_privmsg(self, nick, target, msg):
-        return {
+        return (target, {
                 'time': time.time(),
                 'command': 'PRIVMSG',
                 'channel': target,
                 'nick': nick,
-                'message': msg
-                }
-
+                'message': msg,
+                })
 
 
 bot = LogBot()
