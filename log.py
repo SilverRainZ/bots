@@ -14,6 +14,22 @@ logger.setLevel(logging.INFO)
 time_zone = 'Asia/Shanghai'
 json_output = './json'
 
+def strip(msg):
+    tmp = ''
+    is_color = 0
+    for c in msg:
+        if c in '\x02\x0f\x16\x1d\x1f':
+            continue
+        if c == '\x03':
+            is_color = 2
+            continue
+        if is_color and c in '0123456789':
+            is_color -= 1
+            continue
+        tmp += c
+    return tmp
+
+
 # TODO: Inefficient
 def log(func):
     def warpper(*args, **kw):
@@ -28,14 +44,14 @@ def log(func):
         if not os.path.exists(fname):
             with open(fname, 'w') as f:
                 logger.info('New log file: %s' % fname)
-                json.dump([{'TimeZone': time_zone}], f)
+                json.dump([{'TimeZone': time_zone}], f, ensure_ascii = False)
 
         logger.debug('Logging: %s' % log)
         with open(fname, 'r+') as f:
             j = json.load(f)
             j.append(log)
             f.seek(0)
-            json.dump(j, f)
+            json.dump(j, f, ensure_ascii = False)
 
         logger.info('1 message logged, time usage: %s' % (time.time() - time1))
 
@@ -108,7 +124,7 @@ class LogBot(Bot):
                 'command': 'PRIVMSG',
                 'channel': target,
                 'nick': nick,
-                'message': msg,
+                'message': strip(msg),
                 })
 
 
