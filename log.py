@@ -3,9 +3,10 @@
 
 import os
 import json
-import time
 import logging
+from time import time, tzset, strftime
 from bot import Bot, echo
+
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -38,8 +39,8 @@ def log(func):
             return
         t, log = res
 
-        time1 = time.time()
-        fname = os.path.join(json_output, t, time.strftime('%Y-%m-%d.json'))
+        time1 = time()
+        fname = os.path.join(json_output, t, strftime('%Y-%m-%d.json'))
         logger.debug('Try opening %s' % fname)
         if not os.path.exists(fname):
             with open(fname, 'w') as f:
@@ -53,7 +54,8 @@ def log(func):
             f.seek(0)
             json.dump(j, f, ensure_ascii = False)
 
-        logger.info('1 message logged, time usage: %s' % (time.time() - time1))
+        logger.info('<%s> 1 message logged, time usage: %s'
+                % (strftime('%H:%M:%S'), time() - time1))
 
     return warpper
 
@@ -64,7 +66,7 @@ class LogBot(Bot):
 
     def init(self):
         os.environ['TZ'] = time_zone
-        time.tzset()
+        tzset()
 
         if not os.path.exists(json_output):
             logger.info('Creating JSON output directory "%s"' % json_output)
@@ -83,7 +85,7 @@ class LogBot(Bot):
     @log
     def on_join(self, nick, chan):
         return (chan, {
-                'time': time.time(),
+                'time': strftime('%H:%M:%S'),
                 'command': 'JOIN',
                 'channel': chan,
                 'nick': nick,
@@ -92,7 +94,7 @@ class LogBot(Bot):
     @log
     def on_part(self, nick, chan, reason):
         return (chan, {
-                'time': time.time(),
+                'time': strftime('%H:%M:%S'),
                 'command': 'PART',
                 'channel': chan,
                 'nick': nick,
@@ -102,7 +104,7 @@ class LogBot(Bot):
     @log
     def on_quit(self, nick, chan, reason):
         return (chan, {
-                'time': time.time(),
+                'time': strftime('%H:%M:%S'),
                 'command': 'QUIT',
                 'nick': nick,
                 'reason': reason,
@@ -111,7 +113,7 @@ class LogBot(Bot):
     @log
     def on_nick(self, nick, new_nick, chan):
         return (chan, {
-                'time': time.time(),
+                'time': strftime('%H:%M:%S'),
                 'command': 'NICK',
                 'nick': nick,
                 'new_nick': new_nick,
@@ -120,7 +122,7 @@ class LogBot(Bot):
     @log
     def on_privmsg(self, nick, target, msg):
         return (target, {
-                'time': time.time(),
+                'time': strftime('%H:%M:%S'),
                 'command': 'PRIVMSG',
                 'channel': target,
                 'nick': nick,
