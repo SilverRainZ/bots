@@ -32,33 +32,26 @@ def strip(msg):
 
 
 # TODO: Inefficient
-@echo
-def log(func):
-    def warpper(*args, **kw):
-        res = func(*args, **kw)
-        if not res:
-            return
-        t, log = res
+def logdown(target, log):
+    time1 = time()
 
-        time1 = time()
-        fname = os.path.join(json_output, t, strftime('%Y-%m-%d.json'))
-        logger.debug('Try opening %s' % fname)
-        if not os.path.exists(fname):
-            with open(fname, 'w') as f:
-                logger.info('New log file: %s' % fname)
-                json.dump([{'TimeZone': time_zone}], f, ensure_ascii = False)
+    fname = os.path.join(json_output, target, strftime('%Y-%m-%d.json'))
 
-        logger.debug('Logging: %s' % log)
-        with open(fname, 'r+') as f:
-            j = json.load(f)
-            j.append(log)
-            f.seek(0)
-            json.dump(j, f, ensure_ascii = False)
+    logger.debug('Try opening %s' % fname)
+    if not os.path.exists(fname):
+        with open(fname, 'w') as f:
+            logger.info('New log file: %s' % fname)
+            json.dump([{'TimeZone': time_zone}], f, ensure_ascii = False)
 
-        logger.info('<%s> 1 message logged, time usage: %s'
-                % (strftime('%H:%M:%S'), time() - time1))
+    logger.debug('Logging: %s' % log)
+    with open(fname, 'r+') as f:
+        j = json.load(f)
+        j.append(log)
+        f.seek(0)
+        json.dump(j, f, ensure_ascii = False)
 
-    return (True, None, None)
+    logger.debug('<%s> 1 message logged, time usage: %s'
+            % (strftime('%H:%M:%S'), time() - time1))
 
 
 class LogBot(Bot):
@@ -83,52 +76,57 @@ class LogBot(Bot):
     def finalize(self):
         pass
 
-    @log
+    @echo
     def on_join(self, nick, chan):
-        return (chan, {
+        logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'JOIN',
                 'channel': chan,
                 'nick': nick,
                 })
+        return (True, None, None)
 
-    @log
+    @echo
     def on_part(self, nick, chan, reason):
-        return (chan, {
+        logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'PART',
                 'channel': chan,
                 'nick': nick,
                 'reason': reason,
                 })
+        return (True, None, None)
 
-    @log
+    @echo
     def on_quit(self, nick, chan, reason):
-        return (chan, {
+        logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'QUIT',
                 'nick': nick,
                 'reason': reason,
                 })
+        return (True, None, None)
 
-    @log
+    @echo
     def on_nick(self, nick, new_nick, chan):
-        return (chan, {
+        logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'NICK',
                 'nick': nick,
                 'new_nick': new_nick,
                 })
+        return (True, None, None)
 
-    @log
+    @echo
     def on_privmsg(self, nick, target, msg):
-        return (target, {
+        logdown(target, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'PRIVMSG',
                 'channel': target,
                 'nick': nick,
                 'message': strip(msg),
                 })
+        return (True, None, None)
 
 
 bot = LogBot()
