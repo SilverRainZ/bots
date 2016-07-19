@@ -32,6 +32,7 @@ def strip(msg):
 
 
 # TODO: Inefficient
+@echo
 def log(func):
     def warpper(*args, **kw):
         res = func(*args, **kw)
@@ -57,7 +58,7 @@ def log(func):
         logger.info('<%s> 1 message logged, time usage: %s'
                 % (strftime('%H:%M:%S'), time() - time1))
 
-    return warpper
+    return (True, None, None)
 
 
 class LogBot(Bot):
