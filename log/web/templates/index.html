@@ -1,0 +1,9 @@
+{% extends "default.html" %}
+
+{% block content %}
+<ul>
+    {% for chan, url in links %}
+    <li> <a href="{{ url }}">{{ chan }}</a></li>
+    {% end %}
+</ul>
+{% end %}

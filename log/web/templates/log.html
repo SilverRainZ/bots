@@ -1,0 +1,11 @@
+{% extends "default.html" %}
+
+{% block extra_style %} 
+body { width: 90% }
+time { color: #888 }
+{% end %}
+{% block content %}
+    {% for time, msg in logs %}
+    [<time>{{ time }}</time>] <span>{{ msg }}</span><br>
+    {% end %}
+{% end %}

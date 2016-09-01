@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+    <head>
+        <meta charset="utf-8">
+        <title>{{ title }}</title>
+        <link rel="stylesheet" href="{{ static_url("style.css") }}" />
+<style> {% block extra_style %} {% end %} </style>
+    </head>
+    <body>
+        <h1>{{ title }}</h1>
+        <h3>{{ subtitle }}</h3>
+        <hr>
+        <div class="content">
+            {% block content %} {% end %}
+        </div>
+        <hr>
+        <div class="footer">
+            Collected by logbot, runs on <a href="https://github.com/lastavenger/labots">labots</a>
+        </div>
+    </body>
+</html>
