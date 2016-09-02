@@ -16,7 +16,6 @@ logger.setLevel(logging.INFO)
 
 time_zone = 'Asia/Shanghai'
 json_output = './json'
-_output = './json'
 
 def strip(msg):
     tmp = ''
@@ -34,7 +33,6 @@ def strip(msg):
     return tmp
 
 
-# TODO: Inefficient
 def logdown(target, log):
     time1 = time()
 
@@ -56,18 +54,6 @@ def logdown(target, log):
     logger.debug('<%s> 1 message logged, time usage: %s'
             % (strftime('%H:%M:%S'), time() - time1))
 
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write('<a href="%s">link to channel 1</a>' %
-                   self.reverse_url('channel', '1'))
-
-class ChanHandler(tornado.web.RequestHandler):
-    def initialize(self):
-        pass
-
-    def get(self, chan_name):
-        self.write("this is channel %s" % chan_name)
-
 class LogBot(Bot):
     apps = None
     targets = ['#archlinux-cn', '#linuxba']
@@ -81,17 +67,10 @@ class LogBot(Bot):
             logger.info('Creating JSON output directory "%s"' % json_output)
             os.makedirs(json_output)
         for t in self.targets:
-
-            dirname = os.path.join(json_output, t)
+            dirname = os.path.join(json_output, t[1:])
             if not os.path.exists(dirname):
                 logger.info('Creating directory "%s"' % dirname)
                 os.makedirs(dirname)
-
-        self.app = tornado.web.Application([
-            tornado.web.url(r"/", MainHandler),
-            tornado.web.url(r"/channel/[0-9]+", ChanHandler, name = 'channel'),
-            ])
-        self.app.listen(8888)
 
 
     def finalize(self):
