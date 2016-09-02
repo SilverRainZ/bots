@@ -3,9 +3,22 @@
 {% block extra_style %} 
 body { width: 90% }
 time { color: #888 }
+.time { float: left}
+.nick { 
+    float: left;
+    width: 6em;
+    text-align: right;
+    text-overflow: ellipsis;
+    overflow: hidden
+}
 {% end %}
+
 {% block content %}
-    {% for time, msg in logs %}
-    [<time>{{ time }}</time>] <span>{{ msg }}</span><br>
+    {% for time, nick, msg, type in logs %}
+    <div class="{{ type }}">
+        <div class="time">[<time>{{ time }}</time>]&nbsp;</div>
+        <div class="nick">{{ nick }}&nbsp;</div>
+        <div class="msg">|&nbsp;{{ msg }}</div>
+    </div>
     {% end %}
 {% end %}
