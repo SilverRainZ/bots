@@ -1,7 +1,7 @@
 import os
+import sys
 import json
 import logging
-import threading
 from time import strftime
 import tornado.ioloop
 import tornado.web
@@ -122,6 +122,8 @@ class ChanLogHandler(tornado.web.RequestHandler):
 
 class Application(tornado.web.Application):
     _ioloop = None
+    _thread = None
+
     path = ''
     chans = []
 
@@ -138,37 +140,32 @@ class Application(tornado.web.Application):
         settings = {
             'template_path': os.path.join(os.path.dirname(__file__), 'templates'),
             'static_path': os.path.join(os.path.dirname(__file__), 'static'),
-            'debug': True,
+            'debug': False,
             }
 
         tornado.web.Application.__init__(self, handlers, **settings)
 
-    def _start(self):
-        port = 30500
-        logger.info('Listen on %s', port)
+    def start(self):
+        port = 8888
+        logger.info('Listening on %s', port)
         http_srv = HTTPServer(self)
         http_srv.listen(port)
 
-        logger.info('Starting separate ioloop')
-        self._ioloop = tornado.ioloop.IOLoop()
-        self._ioloop.start()
-
-    def start(self):
-        logger.info('Starting listen thread')
-        t = threading.Thread(target = self._start)
-        t.start()
-
-
     def stop(self):
-        logger.info('Stopping separate ioloop')
-        self._ioloop.stop()
+        pass
 
 
 if __name__ == '__main__':
     logging.basicConfig(format = '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s')
 
-    app = Application(os.path.join('.', 'logs'))
+    if len(sys.argv) < 2:
+        logger.error('Usage: ./web.py <log file path>')
+        exit(-1)
+
+    app = Application(sys.argv[1])
     try:
         app.start()
+        tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
         app.stop()
+        tornado.ioloop.IOLoop.current().stop()

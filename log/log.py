@@ -7,8 +7,6 @@ import logging
 import tornado.ioloop
 from time import time, tzset, strftime
 from bot import Bot, echo
-from log.web import Application
-
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -72,12 +70,9 @@ class LogBot(Bot):
                 logger.info('Creating directory "%s"' % dirname)
                 os.makedirs(dirname)
 
-        app = Application(json_output)
-        app.start()
-
 
     def finalize(self):
-        app.stop()
+        pass
 
 
     @echo
