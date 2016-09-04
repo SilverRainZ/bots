@@ -1,9 +1,16 @@
 import os
 import json
+import logging
+import threading
 from time import strftime
 import tornado.ioloop
 import tornado.web
 from tornado.httpserver import HTTPServer
+
+# Initialize logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class IndexHandler(tornado.web.RequestHandler):
     chans = []
@@ -16,9 +23,9 @@ class IndexHandler(tornado.web.RequestHandler):
 
         for chan in self.chans:
             # TODO: concat url: is it right?
-            links.append((chan, '/' + chan + '/today'))
+            links.append((chan, '/' + chan + '/today', '/' + chan))
 
-        self.render('index.html', 
+        self.render('index.html',
                 title = 'IRC Log Index',
                 subtitle = '%s channel(s)' % len(links),
                 links = links)
@@ -37,18 +44,19 @@ class ChanIndexHandler(tornado.web.RequestHandler):
         except FileNotFoundError:
             raise tornado.web.HTTPError(404)
 
+        files.sort(reverse = True)
         for f in files:
             # TODO: concat url: is it right?
             links.append((os.path.splitext(f)[0], '/' + chan + '/' + os.path.splitext(f)[0]))
 
-        self.render('logs.html', 
+        self.render('logs.html',
                 title = self.path_args[0],
                 subtitle = 'index',
                 links = links)
 
     def write_error(self, status_code, **kwargs):
         if status_code == 404:
-            self.render('404.html', 
+            self.render('404.html',
                     title = 'IRC Log Index',
                     subtitle = self.path_args[0],
                     msg = 'No such channel.',
@@ -93,7 +101,7 @@ class ChanLogHandler(tornado.web.RequestHandler):
                         msg = '%s has quit: %s' % (log['nick'], log['reason'])
                     logs.append((log['time'] , nick, msg, log['command']))
 
-            self.render('log.html', 
+            self.render('log.html',
                     title = chan,
                     subtitle = date,
                     logs = logs)
@@ -105,7 +113,7 @@ class ChanLogHandler(tornado.web.RequestHandler):
 
     def write_error(self, status_code, **kwargs):
         if status_code == 404:
-            self.render('404.html', 
+            self.render('404.html',
                     title = self.path_args[0],
                     subtitle = self.path_args[1],
                     msg = 'There is no any log.'
@@ -113,8 +121,10 @@ class ChanLogHandler(tornado.web.RequestHandler):
 
 
 class Application(tornado.web.Application):
+    _ioloop = None
     path = ''
     chans = []
+
     def __init__(self, path):
         self.path = path
         self.chans = os.listdir(path)
@@ -125,19 +135,40 @@ class Application(tornado.web.Application):
                 (r'/', IndexHandler),
                 ]
 
-        settings = { 
+        settings = {
             'template_path': os.path.join(os.path.dirname(__file__), 'templates'),
             'static_path': os.path.join(os.path.dirname(__file__), 'static'),
             'debug': True,
             }
 
         tornado.web.Application.__init__(self, handlers, **settings)
-        
+
+    def _start(self):
+        port = 30500
+        logger.info('Listen on %s', port)
+        http_srv = HTTPServer(self)
+        http_srv.listen(port)
+
+        logger.info('Starting separate ioloop')
+        self._ioloop = tornado.ioloop.IOLoop()
+        self._ioloop.start()
+
+    def start(self):
+        logger.info('Starting listen thread')
+        t = threading.Thread(target = self._start)
+        t.start()
+
+
+    def stop(self):
+        logger.info('Stopping separate ioloop')
+        self._ioloop.stop()
+
 
 if __name__ == '__main__':
-    log_dir = os.path.join('..', 'logs')
-    app = Application(log_dir)
+    logging.basicConfig(format = '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s')
 
-    http_srv = HTTPServer(app)
-    http_srv.listen(8888)
-    tornado.ioloop.IOLoop.current().start()
+    app = Application(os.path.join('.', 'logs'))
+    try:
+        app.start()
+    except KeyboardInterrupt:
+        app.stop()

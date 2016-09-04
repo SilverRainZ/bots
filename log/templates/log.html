@@ -2,7 +2,6 @@
 
 {% block extra_style %} 
 body { width: 90% }
-time { color: #888 }
 .time { float: left}
 .nick { 
     float: left;
@@ -10,6 +9,9 @@ time { color: #888 }
     text-align: right;
     text-overflow: ellipsis;
     overflow: hidden
+}
+.JOIN, .PART, .QUIT {
+    color: #888;
 }
 {% end %}
 
