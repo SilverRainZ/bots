@@ -3,6 +3,6 @@ log
 
 IRC log bot.
 
-`_web/web.py` is a seperated script for web interface of irc log.
-
-
+NOTE: `_web/web.py` is a seperated script for web interface of irc log. plz
+run `./_web_web.py <path>` to start it. `<path>` should be same with
+`json_output` in `log.py`.

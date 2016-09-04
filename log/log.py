@@ -54,7 +54,7 @@ def logdown(target, log):
 
 class LogBot(Bot):
     apps = None
-    targets = ['#archlinux-cn', '#linuxba']
+    targets = ['#archlinux-cn', '#linuxba', '#gzlug']
     trig_cmds = ['JOIN', 'PART', 'QUIT', 'NICK', 'PRIVMSG']
 
     def init(self):
