@@ -1,8 +1,7 @@
 log
 ---
 
-IRC log bot that base on [LABots](https://github.com/lastavenger/labots) bot 
-framework.
+IRC log bot.
 
 `_web/web.py` is a seperated script for web interface of irc log.
 
