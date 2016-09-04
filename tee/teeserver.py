@@ -8,16 +8,11 @@
 import sys
 import socket
 import logging
-from bot import Bot, echo, broadcast
 
 # Initialize logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-tee_server = '115.159.114.54'
-tee_alias = 'ExiaHanTXFun'
-tee_port = 8303
-    
 region_map = {
         '-1':'default', '901':'XEN', '902':'XNI', '903':'XSC', '904':'XWA',
         '737':'SS', '4':'AF', '248':'AX', '8':'AL', '12':'DZ', '16':'AS',
@@ -130,45 +125,6 @@ class TeeServer:
         logger.info('Stop')
         self.sock.close()
 
-
-
-class TeeBot(Bot):
-    targets = ['#lasttest']
-    trig_cmds = ['PRIVMSG']
-    srv = None
-
-    def init(self):
-        self.srv = TeeServer(tee_server, tee_port, tee_alias)
-
-    def finalize(self):
-        self.srv.stop()
-
-    @echo
-    def on_privmsg(self, nick, target, msg):
-        if not msg.startswith('.tee'):
-            return (True, None, None)
-
-        reply = ''
-        msg = msg.split(' ')
-
-        if msg[1:] and msg[1] == 'help':
-                return (True, target, help())
-
-        if not self.srv.update():
-            return (True, target, '%s: failed to update server info' % nick)
-        
-        if not msg[1:]:
-            reply = players_list(self.srv)
-        elif msg[1] == 'server':
-            reply = server_info(self.srv)
-        elif msg[1] == 'player' and msg[2:]:
-            reply = player_info(self.srv, msg[2])
-        else:
-            reply = players_list(self.srv)
-
-        return (True, target, '%s: %s' % (nick, reply))
-
-
 def players_list(srv):
     return '%s/%s people(s) in %s: %s' % (
             srv.cur_player_num,
@@ -194,12 +150,9 @@ def server_info(srv):
             )
 
 
-def help():
+def help_():
     return ('Usage: `.tee` => get players list, '
             '`.tee server` => get server info, '
             '`.tee player <playername>` => get player info, '
             '`.tee help` => get this message.'
             )
-
-
-bot = TeeBot()
