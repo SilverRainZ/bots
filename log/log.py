@@ -34,7 +34,7 @@ def strip(msg):
 def logdown(target, log):
     time1 = time()
 
-    fname = os.path.join(json_output, target, strftime('%Y-%m-%d.json'))
+    fname = os.path.join(json_output, target[1:], strftime('%Y-%m-%d.json'))
 
     logger.debug('Try opening %s' % fname)
     if not os.path.exists(fname):
