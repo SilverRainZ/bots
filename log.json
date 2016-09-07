@@ -1,0 +1,5 @@
+{
+    "time_zone": "Asia/Shanghai",
+    "json_output": "../logs",
+    "targets": ["#lasttest"]
+}

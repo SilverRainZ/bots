@@ -6,14 +6,14 @@ import json
 import logging
 import tornado.ioloop
 from time import time, tzset, strftime
-from bot import Bot, echo
+from bot import Bot, echo, read_config
 
 # Initialize logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-time_zone = 'Asia/Shanghai'
-json_output = './json'
+time_zone = ''
+json_output = ''
 
 def strip(msg):
     tmp = ''
@@ -53,12 +53,18 @@ def logdown(target, log):
             % (strftime('%H:%M:%S'), time() - time1))
 
 class LogBot(Bot):
-    apps = None
-    targets = [ '#linuxba' ]
+    targets = []
     trig_cmds = ['JOIN', 'PART', 'QUIT', 'NICK', 'PRIVMSG']
 
     def init(self):
-        logger.info('%s', self.targets)
+        global time_zone
+        global json_output
+
+        conf = read_config(__file__)
+        self.targets = conf['targets']
+        time_zone = conf['time_zone']
+        json_output = conf['json_output']
+
         os.environ['TZ'] = time_zone
         tzset()
 

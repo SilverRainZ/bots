@@ -1,0 +1,6 @@
+{
+    "targets": ["#lasttest", "#nexttest"],
+    "tee_server": "115.159.114.54",
+    "tee_alias": "ExiaHanTXFun",
+    "tee_port": 8303
+}

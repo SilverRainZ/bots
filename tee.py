@@ -8,15 +8,15 @@
 import sys
 import socket
 import logging
-from bot import Bot, echo, broadcast
+from bot import Bot, echo, read_config
 
 # Initialize logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-tee_server = '115.159.114.54'
-tee_alias = 'ExiaHanTXFun'
-tee_port = 8303
+tee_server = ''
+tee_alias = ''
+tee_port = 0
     
 region_map = {
         '-1':'default', '901':'XEN', '902':'XNI', '903':'XSC', '904':'XWA',
@@ -133,11 +133,21 @@ class TeeServer:
 
 
 class TeeBot(Bot):
-    targets = ['#lasttest']
+    targets = []
     trig_cmds = ['PRIVMSG']
     srv = None
 
     def init(self):
+        global tee_server
+        global tee_alias
+        global tee_port
+
+        conf = read_config(__file__)
+        self.targets = conf['targets']
+        tee_server = conf['tee_server']
+        tee_alias = conf['tee_alias']
+        tee_port = conf['tee_port']
+
         self.srv = TeeServer(tee_server, tee_port, tee_alias)
 
     def finalize(self):
