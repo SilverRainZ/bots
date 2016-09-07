@@ -54,10 +54,11 @@ def logdown(target, log):
 
 class LogBot(Bot):
     apps = None
-    targets = ['#archlinux-cn', '#linuxba', '#gzlug']
+    targets = [ '#linuxba' ]
     trig_cmds = ['JOIN', 'PART', 'QUIT', 'NICK', 'PRIVMSG']
 
     def init(self):
+        logger.info('%s', self.targets)
         os.environ['TZ'] = time_zone
         tzset()
 
