@@ -34,7 +34,7 @@ class CallPoliceBot(Bot):
 
     @echo
     def on_privmsg(self, nick, target, msg):
-        cmd = '.callpolice'
+        cmd = '.110'
         if msg.startswith(cmd):
             words = msg.split(' ')
             if words[1:]:
