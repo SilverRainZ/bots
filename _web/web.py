@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import config
 import logging
 from time import strftime
 import tornado.ioloop
@@ -146,7 +147,7 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, **settings)
 
     def start(self):
-        port = 8888
+        port = config.port
         logger.info('Listening on %s', port)
         http_srv = HTTPServer(self)
         http_srv.listen(port)
@@ -158,11 +159,7 @@ class Application(tornado.web.Application):
 if __name__ == '__main__':
     logging.basicConfig(format = '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s')
 
-    if len(sys.argv) < 2:
-        logger.error('Usage: ./web.py <log file path>')
-        exit(-1)
-
-    app = Application(sys.argv[1])
+    app = Application(config.path)
     try:
         app.start()
         tornado.ioloop.IOLoop.current().start()
