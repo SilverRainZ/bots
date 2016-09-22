@@ -1,0 +1,17 @@
+{
+    "untell_msgs": {
+        "LastAvengers": {}
+    },
+    "last_msgs": {
+        "LastAvengers": {
+            "channel": "#lasttest",
+            "msg": "www",
+            "time": "2016-09-23 00:00:16"
+        },
+        "labots_": {
+            "channel": "#lasttest",
+            "msg": "LastAvengers: LastAvengers told you: 痛 at 2016-09-23 00:00:04 in #lasttest",
+            "time": "2016-09-23 00:00:16"
+        }
+    }
+}
