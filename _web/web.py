@@ -100,6 +100,9 @@ class ChanLogHandler(tornado.web.RequestHandler):
                     elif log['command'] == 'QUIT':
                         nick = '<--'
                         msg = '%s has quit: %s' % (log['nick'], log['reason'])
+                    elif log['command'] == 'NICK':
+                        nick = '---'
+                        msg = '%s now has known as: %s' % (log['nick'], log['new_nick'])
                     logs.append((log['time'] , nick, msg, log['command']))
 
             self.render('log.html',
