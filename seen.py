@@ -34,8 +34,7 @@ class SeenAndTellBot(Bot):
                     { 'last_msgs': self.last_msgs, 'untell_msgs': self.untell_msgs },
                     f, ensure_ascii = False, indent = 4)
 
-    def on_PRIVMSG(self, target, nick, msg):
-
+    def on_MSG(self, target, nick, msg):
         # Record one's last message
         last_msg = self.last_msgs[nick] = {}
 
@@ -104,6 +103,15 @@ class SeenAndTellBot(Bot):
                 ret_msg = 'Usage: .tell <nick> <msg>'
 
             self.say(target, nick + ': ' + ret_msg)
+
+    def on_PRIVMSG(self, target, nick, msg):
+        self.on_MSG(target, nick, msg)
+
+    def on_ACTION(self, target, nick, msg):
+        self.on_MSG(target, nick, msg)
+
+    def on_NOTICE(self, target, nick, msg):
+        self.on_MSG(target, nick, msg)
 
 
 
