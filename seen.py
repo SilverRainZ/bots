@@ -9,63 +9,61 @@ from bot import Bot
 
 # TODO: DON'T USE GLOBAL VARIBLE
 
-cache_file = ''
-last_msgs = {}
-untell_msgs = {}
 
 class SeenAndTellBot(Bot):
     targets = []
-    trig_cmds = ['PRIVMSG']
+
+    cache_file = ''
+    last_msgs = {}
+    untell_msgs = {}
 
     def init(self):
-        global cache_file
-        global last_msgs
-        global untell_msgs
 
         self.targets = self.config['targets']
+        self.cache_file = self.config['cache']
 
-        cache_file = self.config['cache']
-
-        with open(cache_file, 'r') as f:
+        with open(self.cache_file, 'r') as f:
             cache = json.loads(f.read())
-            last_msgs = cache['last_msgs']
-            untell_msgs = cache['untell_msgs']
+            self.last_msgs = cache['last_msgs']
+            self.untell_msgs = cache['untell_msgs']
 
 
     def finalize(self):
-        with open(cache_file, 'w') as f:
+        with open(self.cache_file, 'w') as f:
             json.dump(
-                    { 'last_msgs': last_msgs, 'untell_msgs': untell_msgs },
+                    { 'last_msgs': self.last_msgs, 'untell_msgs': self.untell_msgs },
                     f, ensure_ascii = False, indent = 4)
 
     def on_PRIVMSG(self, target, nick, msg):
 
         # Record one's last message
-        last_msgs[nick] = {}
-        last_msgs[nick]['time'] = strftime("%Y-%m-%d %H:%M:%S")
-        last_msgs[nick]['msg'] = msg
-        last_msgs[nick]['channel'] = target
+        last_msg = self.last_msgs[nick] = {}
+
+        last_msg['time'] = strftime("%Y-%m-%d %H:%M:%S")
+        last_msg['msg'] = msg
+        last_msg['channel'] = target
 
         # Whether there is any message to tell
-        # TODO: return multi message :(
-        if untell_msgs.get(nick):
-            ret_msgs = '%s: %s told you: %s at %s in %s' % (
-                nick,
-                untell_msgs[nick]['sender'],
-                untell_msgs[nick]['msg'],
-                untell_msgs[nick]['time'],
-                untell_msgs[nick]['channel']
-                )
-            untell_msgs[nick] = {}
-            self.say(target, ret_msgs)
+        if self.untell_msgs.get(nick):
+            untell_msg_list = self.untell_msgs[nick]
+            for untell_msg in untell_msg_list:
+                self.say(target,
+                        '%s: %s told you: %s at %s in %s' % (
+                            nick,
+                            untell_msg['sender'],
+                            untell_msg['msg'],
+                            untell_msg['time'],
+                            untell_msg['channel']
+                            ))
+            self.untell_msgs[nick] = []
 
         # .seen command
         if msg.startswith('.seen'):
             words = msg.split(' ')
             if words[1:]:
                 person = words[1]
-                if last_msgs.get(person):
-                    msg = last_msgs[person]
+                if self.last_msgs.get(person):
+                    msg = self.last_msgs[person]
                     if msg['channel'] == target:
                         ret_msg = 'I last saw %s at %s in here, saying %s .' % (
                                 person, msg['time'], msg['msg'])
@@ -86,18 +84,27 @@ class SeenAndTellBot(Bot):
                 pass_msg = words[2]
                 time = strftime("%Y-%m-%d %H:%M:%S")
 
-                untell_msgs[person] = {
-                        'sender': nick,
-                        'channel': target,
-                        'time': time,
-                        'msg': pass_msg
-                        }
+                if self.untell_msgs.get(person):
+                    self.untell_msgs[person].append({
+                            'sender': nick,
+                            'channel': target,
+                            'time': time,
+                            'msg': pass_msg
+                            })
+                else:
+                    self.untell_msgs[person] = [{
+                            'sender': nick,
+                            'channel': target,
+                            'time': time,
+                            'msg': pass_msg
+                            }]
 
                 ret_msg = 'I will pass it to %s when he/she/it is around.' % person
             else:
-                ret_msg = 'Usage: .seen <nick> <msg>'
+                ret_msg = 'Usage: .tell <nick> <msg>'
 
             self.say(target, nick + ': ' + ret_msg)
+
 
 
 bot = SeenAndTellBot(__file__)

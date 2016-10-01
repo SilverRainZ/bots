@@ -54,7 +54,6 @@ def logdown(target, log):
 
 class LogBot(Bot):
     targets = []
-    trig_cmds = ['JOIN', 'PART', 'QUIT', 'NICK', 'PRIVMSG']
 
     def init(self):
         global time_zone
