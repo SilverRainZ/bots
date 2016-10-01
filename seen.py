@@ -5,7 +5,7 @@ import os
 import json
 from time import strftime
 
-from bot import Bot, echo, read_config
+from bot import Bot
 
 # TODO: DON'T USE GLOBAL VARIBLE
 
@@ -22,10 +22,9 @@ class SeenAndTellBot(Bot):
         global last_msgs
         global untell_msgs
 
-        config = read_config(__file__)
-        self.targets = config['targets']
+        self.targets = self.config['targets']
 
-        cache_file = config['cache'] 
+        cache_file = self.config['cache']
 
         with open(cache_file, 'r') as f:
             cache = json.loads(f.read())
@@ -39,8 +38,7 @@ class SeenAndTellBot(Bot):
                     { 'last_msgs': last_msgs, 'untell_msgs': untell_msgs },
                     f, ensure_ascii = False, indent = 4)
 
-    @echo
-    def on_privmsg(self, nick, target, msg):
+    def on_PRIVMSG(self, target, nick, msg):
 
         # Record one's last message
         last_msgs[nick] = {}
@@ -52,14 +50,14 @@ class SeenAndTellBot(Bot):
         # TODO: return multi message :(
         if untell_msgs.get(nick):
             ret_msgs = '%s: %s told you: %s at %s in %s' % (
-                nick,  
+                nick,
                 untell_msgs[nick]['sender'],
                 untell_msgs[nick]['msg'],
                 untell_msgs[nick]['time'],
                 untell_msgs[nick]['channel']
                 )
             untell_msgs[nick] = {}
-            return (True, target, ret_msgs)
+            self.say(target, ret_msgs)
 
         # .seen command
         if msg.startswith('.seen'):
@@ -78,7 +76,7 @@ class SeenAndTellBot(Bot):
                     ret_msg = 'I haven\'t seen %s recently.' % person
             else:
                 ret_msg = 'Usage: .seen <nick>'
-            return (True, target, nick + ': ' + ret_msg)
+            self.say(target, nick + ': ' + ret_msg)
 
         # .tell command
         elif msg.startswith('.tell'):
@@ -99,8 +97,7 @@ class SeenAndTellBot(Bot):
             else:
                 ret_msg = 'Usage: .seen <nick> <msg>'
 
-            return (True, target, nick + ': ' + ret_msg)
+            self.say(target, nick + ': ' + ret_msg)
 
-        return None
 
-bot = SeenAndTellBot()
+bot = SeenAndTellBot(__file__)

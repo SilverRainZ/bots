@@ -8,7 +8,7 @@
 import sys
 import socket
 import logging
-from bot import Bot, echo, read_config
+from bot import Bot
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -134,7 +134,6 @@ class TeeServer:
 
 class TeeBot(Bot):
     targets = []
-    trig_cmds = ['PRIVMSG']
     srv = None
 
     def init(self):
@@ -142,41 +141,45 @@ class TeeBot(Bot):
         global tee_alias
         global tee_port
 
-        conf = read_config(__file__)
-        self.targets = conf['targets']
-        tee_server = conf['tee_server']
-        tee_alias = conf['tee_alias']
-        tee_port = conf['tee_port']
+        self.targets = self.config['targets']
+        tee_server = self.config['tee_server']
+        tee_alias = self.config['tee_alias']
+        tee_port = self.config['tee_port']
 
         self.srv = TeeServer(tee_server, tee_port, tee_alias)
 
     def finalize(self):
         self.srv.stop()
 
-    @echo
-    def on_privmsg(self, nick, target, msg):
-        if not msg.startswith('.tee'):
-            return (True, None, None)
+    def on_PRIVMSG(self, target, nick, msg):
+        cmd = '.tee'
+        if msg.startswith(cmd):
+            reply = ''
+            words = msg.split(' ')
 
-        reply = ''
-        msg = msg.split(' ')
+            sub_cmd = words[1] if words[1:] else ''
 
-        if msg[1:] and msg[1] == 'help':
-                return (True, target, help())
+            if sub_cmd == 'help':
+                self.say(target, help())
+                return
 
-        if not self.srv.update():
-            return (True, target, '%s: failed to update server info' % nick)
-        
-        if not msg[1:]:
-            reply = players_list(self.srv)
-        elif msg[1] == 'server':
-            reply = server_info(self.srv)
-        elif msg[1] == 'player' and msg[2:]:
-            reply = player_info(self.srv, msg[2])
-        else:
-            reply = players_list(self.srv)
+            if not self.srv.update():
+                self.say(target, '%s: failed to update server info' % nick)
+                return
 
-        return (True, target, '%s: %s' % (nick, reply))
+            if sub_cmd == 'server':
+                reply = server_info(self.srv)
+            elif sub_cmd == 'player':
+                player = words[2] if words[2:] else ''
+                if not player:
+                    reply = 'Missing palyer name'
+                else:
+                    reply = player_info(self.srv, player)
+            else:
+                reply = players_list(self.srv)
+
+            self.say(target, '%s: %s' % (nick, reply))
+
 
 
 def players_list(srv):
@@ -212,4 +215,4 @@ def help():
             )
 
 
-bot = TeeBot()
+bot = TeeBot(__file__)

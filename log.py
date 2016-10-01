@@ -6,7 +6,7 @@ import json
 import logging
 import tornado.ioloop
 from time import time, tzset, strftime
-from bot import Bot, echo, read_config
+from bot import Bot
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -60,10 +60,9 @@ class LogBot(Bot):
         global time_zone
         global json_output
 
-        conf = read_config(__file__)
-        self.targets = conf['targets']
-        time_zone = conf['time_zone']
-        json_output = conf['json_output']
+        self.targets = self.config['targets']
+        time_zone = self.config['time_zone']
+        json_output = self.config['json_output']
 
         os.environ['TZ'] = time_zone
         tzset()
@@ -82,49 +81,48 @@ class LogBot(Bot):
         pass
 
 
-    @echo
-    def on_join(self, nick, chan):
+    def on_JOIN(self, chan, nick):
         logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'JOIN',
                 'channel': chan,
                 'nick': nick,
                 })
-        return (True, None, None)
 
-    @echo
-    def on_part(self, nick, chan, reason):
+    def on_PART(self, chan, nick):
         logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'PART',
                 'channel': chan,
                 'nick': nick,
-                'reason': reason,
                 })
-        return (True, None, None)
 
-    @echo
-    def on_quit(self, nick, chan, reason):
+    def on_QUIT(self, chan, nick, reason):
         logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'QUIT',
                 'nick': nick,
                 'reason': reason,
                 })
-        return (True, None, None)
 
-    @echo
-    def on_nick(self, nick, new_nick, chan):
+    def on_NICK(self, chan, old_nick, new_nick):
         logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'NICK',
                 'nick': nick,
                 'new_nick': new_nick,
                 })
-        return (True, None, None)
 
-    @echo
-    def on_privmsg(self, nick, target, msg):
+    def on_ACTION(self, target, nick, msg):
+        logdown(target, {
+                'time': strftime('%H:%M:%S'),
+                'command': 'ACTION',
+                'channel': target,
+                'nick': nick,
+                'message': strip(msg),
+                })
+
+    def on_PRIVMSG(self, target, nick, msg):
         logdown(target, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'PRIVMSG',
@@ -132,6 +130,5 @@ class LogBot(Bot):
                 'nick': nick,
                 'message': strip(msg),
                 })
-        return (True, None, None)
 
-bot = LogBot()
+bot = LogBot(__file__)

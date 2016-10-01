@@ -3,7 +3,7 @@
 
 import json
 from random import randint
-from bot import Bot, echo, read_config
+from bot import Bot
 
 def gen(locale, person):
     msg = [ '歪妖妖灵吗？帮%s点一份猪扒饭' % person,
@@ -22,18 +22,15 @@ def gen(locale, person):
 
 class CallPoliceBot(Bot):
     targets = []
-    trig_cmds = ['PRIVMSG']
 
     def init(self):
-        config = read_config(__file__)
-        self.targets = config['targets']
+        self.targets = self.config['targets']
         gen.n = 0
 
     def finalize(self):
         pass
 
-    @echo
-    def on_privmsg(self, nick, target, msg):
+    def on_PRIVMSG(self, target, nick, msg):
         cmd = '.110'
         if msg.startswith(cmd):
             words = msg.split(' ')
@@ -41,7 +38,6 @@ class CallPoliceBot(Bot):
                 person = words[1]
             else:
                 person = '我'
-            return (True, target, gen(target, person))
-        return None
+            self.say(target, gen(target, person))
 
-bot = CallPoliceBot()
+bot = CallPoliceBot(__file__)
