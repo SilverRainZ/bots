@@ -105,7 +105,7 @@ class LogBot(Bot):
                 'reason': reason,
                 })
 
-    def on_NICK(self, chan, old_nick, new_nick):
+    def on_NICK(self, chan, nick, new_nick):
         logdown(chan, {
                 'time': strftime('%H:%M:%S'),
                 'command': 'NICK',
