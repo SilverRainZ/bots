@@ -35,9 +35,9 @@ class SMBot(Bot):
         if words[0] in ['.LQYMGT', '.lqymgt', '.刘青云']:
             words = ['.sm', 'LQYMGT']
 
-        if words[0] in ['sm', '.sm']:
-            # Query
-            if words[2:]:
+        if words[0] == '.sm':
+            # Add
+            if words[2:] and words[2]:
                 name, tag = words[1], words[2]
                 if self.data.get(name):
                     if not tag in self.data[name]:
@@ -48,6 +48,7 @@ class SMBot(Bot):
                 else:
                     self.data[name] = [tag]
                     self.say(target, '%s: Pushed!' % nick)
+            # Query
             elif words[1:]:
                 name = words[1]
                 if self.data.get(name):
@@ -59,7 +60,6 @@ class SMBot(Bot):
                     self.say(target, '%s: %s' % (nick,tags[n]))
                 else:
                     self.say(target, '%s: No data' % nick)
-            # Add
             else:
                 self.say(target, '%s: Usage: .sm <nick> [tag]' % nick)
 
