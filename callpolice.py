@@ -22,6 +22,7 @@ def gen(locale, person):
 
 class CallPoliceBot(Bot):
     targets = []
+    usage = '.110 <nick>'
 
     def init(self):
         self.targets = self.config['targets']

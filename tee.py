@@ -134,7 +134,12 @@ class TeeServer:
 
 class TeeBot(Bot):
     targets = []
+    usage = '.tee: get players list;'
+            '.tee server: get server info;'
+            '.tee player <playername>: get player info;'
+
     srv = None
+
 
     def init(self):
         global tee_server

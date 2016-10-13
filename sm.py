@@ -13,6 +13,7 @@ from bot import Bot
 
 class SMBot(Bot):
     targets = []
+    usage = '.sm <nick> [tag]; .LQYMGT; .lqymgt, .刘青云'
 
     n = 0
     data = {}

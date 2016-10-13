@@ -12,6 +12,7 @@ from bot import Bot
 
 class SeenAndTellBot(Bot):
     targets = []
+    usage = '.seen <nick>; .tell <nick> <msg>'
 
     cache_file = ''
     last_msgs = {}
