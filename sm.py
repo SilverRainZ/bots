@@ -27,10 +27,10 @@ class SMBot(Bot):
 
     def finalize(self):
         with open(self.data_file, 'w') as f:
-            json.dump( self.data, f, ensure_ascii = False, indent = 4)
+            json.dump(self.data, f, ensure_ascii = False, indent = 4)
 
-    def on_MSG(self, target, nick, msg):
-        words = msg.split(' ', maxsplit = 3)
+    def on_LABOTS_MSG(self, target, bot, nick, msg):
+        words = msg.split(' ', maxsplit = 2)
 
         if words[0] in ['.LQYMGT', '.lqymgt', '.刘青云']:
             words = ['.sm', 'LQYMGT']
@@ -62,17 +62,6 @@ class SMBot(Bot):
                     self.say(target, '%s: No data' % nick)
             else:
                 self.say(target, '%s: Usage: .sm <nick> [tag]' % nick)
-
-
-    def on_PRIVMSG(self, target, nick, msg):
-        self.on_MSG(target, nick, msg)
-
-    def on_ACTION(self, target, nick, msg):
-        self.on_MSG(target, nick, msg)
-
-    def on_NOTICE(self, target, nick, msg):
-        self.on_MSG(target, nick, msg)
-
 
 
 bot = SMBot(__file__)

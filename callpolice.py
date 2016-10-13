@@ -30,7 +30,7 @@ class CallPoliceBot(Bot):
     def finalize(self):
         pass
 
-    def on_PRIVMSG(self, target, nick, msg):
+    def on_LABOTS_MSG(self, target, bot, nick, msg):
         cmd = '.110'
         if msg.startswith(cmd):
             words = msg.split(' ')

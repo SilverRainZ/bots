@@ -151,7 +151,7 @@ class TeeBot(Bot):
     def finalize(self):
         self.srv.stop()
 
-    def on_PRIVMSG(self, target, nick, msg):
+    def on_LABOTS_MSG(self, target, bot, nick, msg):
         cmd = '.tee'
         if msg.startswith(cmd):
             reply = ''
