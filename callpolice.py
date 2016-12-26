@@ -34,7 +34,7 @@ class CallPoliceBot(Bot):
     def on_LABOTS_MSG(self, target, bot, nick, msg):
         cmd = '.110'
         if msg.startswith(cmd):
-            words = msg.split(' ')
+            words = list(filter(lambda e: e, msg.split(' ', maxsplit = 2)))
             if words[1:]:
                 person = words[1]
             else:

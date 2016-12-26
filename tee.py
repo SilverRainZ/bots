@@ -161,7 +161,7 @@ class TeeBot(Bot):
         cmd = '.tee'
         if msg.startswith(cmd):
             reply = ''
-            words = msg.split(' ')
+            words = list(filter(lambda e: e, msg.split(' ')))
 
             sub_cmd = words[1] if words[1:] else ''
 

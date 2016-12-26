@@ -31,7 +31,7 @@ class SMBot(Bot):
             json.dump(self.data, f, ensure_ascii = False, indent = 4)
 
     def on_LABOTS_MSG(self, target, bot, nick, msg):
-        words = msg.split(' ', maxsplit = 2)
+        words = list(filter(lambda e: e, msg.split(' ', maxsplit = 2)))
 
         if words[0] in ['.LQYMGT', '.lqymgt', '.刘青云']:
             words = ['.sm', 'LQYMGT']

@@ -59,7 +59,7 @@ class SeenAndTellBot(Bot):
 
         # .seen command
         if msg.startswith('.seen'):
-            words = msg.split(' ')
+            words = list(filter(lambda e: e, msg.split(' ')))
             if words[1:]:
                 person = words[1]
                 if self.last_msgs.get(person):
@@ -78,7 +78,7 @@ class SeenAndTellBot(Bot):
 
         # .tell command
         elif msg.startswith('.tell'):
-            words = msg.split(' ', maxsplit = 2)
+            words = list(filter(lambda e: e, msg.split(' ', maxsplit = 2)))
             if words[2:]:
                 person = words[1]
                 pass_msg = words[2]
