@@ -8,7 +8,7 @@
 import sys
 import socket
 import logging
-from bot import Bot
+from labots.bot import Bot
 
 # Initialize logging
 logger = logging.getLogger(__name__)

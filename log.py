@@ -6,7 +6,7 @@ import json
 import logging
 import tornado.ioloop
 from time import time, tzset, strftime
-from bot import Bot
+from labots.bot import Bot
 
 # Initialize logging
 logger = logging.getLogger(__name__)

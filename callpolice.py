@@ -3,7 +3,7 @@
 
 import json
 from random import randint
-from bot import Bot
+from labots.bot import Bot
 
 def gen(locale, person):
     msg = [ '歪妖妖灵吗？帮%s点一份猪扒饭' % person,

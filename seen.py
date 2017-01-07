@@ -5,7 +5,7 @@ import os
 import json
 from time import strftime
 
-from bot import Bot
+from labots.bot import Bot
 
 # TODO: DON'T USE GLOBAL VARIBLE
 

@@ -9,7 +9,7 @@
 import os
 import json
 from random import randint
-from bot import Bot
+from labots.bot import Bot
 
 class SMBot(Bot):
     targets = []
