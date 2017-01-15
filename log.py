@@ -16,18 +16,32 @@ time_zone = ''
 json_output = ''
 
 def strip(msg):
+    logger.debug('raw msg: %s', msg)
     tmp = ''
     is_color = 0
+    is_fg = is_bg = 0
     for c in msg:
         if c in '\x02\x0f\x16\x1d\x1f':
             continue
         if c == '\x03':
-            is_color = 2
+            is_fg = 2
+            is_bg = 2
             continue
-        if is_color and c in '0123456789':
-            is_color -= 1
+
+        if is_fg and c in '0123456789':
+            is_fg -= 1
             continue
+        elif c == ',' and is_bg == 2:
+            is_fg = 0
+            is_bg = 2
+            continue
+        elif is_fg == 0 and is_bg and c in '0123456789':
+            is_bg -= 1
+            continue
+        else:
+            is_fg = is_bg = 0
         tmp += c
+    logger.debug('msg: %s', tmp)
     return tmp
 
 
