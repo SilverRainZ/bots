@@ -12,6 +12,9 @@ class MainHandler(web.RequestHandler):
         self.bot = bot
 
     def post(self):
+        content_type = self.request.headers.get("Content-Type")
+        if content_type != 'application/json':
+            return
         event = self.request.headers.get("X-GitHub-Event")
         try:
             data = json.loads(self.request.body)
