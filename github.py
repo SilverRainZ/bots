@@ -1,17 +1,57 @@
 # -*- encoding: UTF-8 -*-
 
 import json
+import logging
 from labots.bot import Bot
-from tornado import web, escape
+from tornado import web, escape, httpclient
 import json
 
-class MainHandler(web.RequestHandler):
+logger = logging.getLogger(__name__)
+
+class WebHookHandler(web.RequestHandler):
     bot = None
 
     def initialize(self, bot):
         self.bot = bot
 
+    def check_source(self, ip):
+        api = 'http://api.github.com/meta'
+        http_header = { 'User-Agent' : 'Mozilla/5.0 \
+                (X11; Linux x86_64; rv:51.0) \
+                Gecko/20100101 Firefox/51.0' }
+        http_request = httpclient.HTTPRequest(
+                url = api,
+                method = 'GET',
+                headers = http_header)
+        http_client = httpclient.HTTPClient()
+        try:
+            response = http_client.fetch(http_request)
+            meta = json.loads(response.body)
+            hookips = [ip.split('/')[0] for ip in meta['hooks']]
+            return (ip in hookips)
+        except httpclient.HTTPError as e:
+            logger.error("HTTPError: %s %s", api, str(e))
+        except json.JSONDecodeError as e:
+            logger.error("JSONDecodeError: %s", str(e))
+        except KeyError as e:
+            logger.error("KeyError: %s", str(e))
+        except Exception as e:
+            logger.error("%s", str(e))
+        http_client.close()
+
+        return False
+
+
     def post(self):
+        ip = self.request.remote_ip
+        if not ip:
+            return
+        if not self.check_source(ip):
+            logger.warn('Untrusted IP %s, ignored', ip)
+            return
+        else:
+            logger.info('Webhook IP %s', ip)
+
         content_type = self.request.headers.get("Content-Type")
         if content_type != 'application/json':
             return
@@ -19,20 +59,24 @@ class MainHandler(web.RequestHandler):
         try:
             data = json.loads(self.request.body)
         except json.JSONDecodeError as e:
+            logger.error('JSONDecodeError: %s', str(e))
             return
 
-        if event == 'create':
-            self.event_create(data)
-        elif event == 'delete':
-            self.event_delete(data)
-        elif event == 'issue_comment':
-            self.event_issue_comment(data)
-        elif event == 'issues':
-            self.event_issues(data)
-        elif event == 'pull_request':
-            self.event_pull_request(data)
-        elif event == 'push':
-            self.event_push(data)
+        try:
+            if event == 'create':
+                self.event_create(data)
+            elif event == 'delete':
+                self.event_delete(data)
+            elif event == 'issue_comment':
+                self.event_issue_comment(data)
+            elif event == 'issues':
+                self.event_issues(data)
+            elif event == 'pull_request':
+                self.event_pull_request(data)
+            elif event == 'push':
+                self.event_push(data)
+        except KeyError as e:
+            logger.error('KeyError: %s', str(e))
 
     def event_create(self, data):
         repo = data['repository']['full_name']
@@ -65,10 +109,10 @@ class MainHandler(web.RequestHandler):
             for t in self.bot.subscribers[repo]:
                 self.bot.say(t, '[%s] %s commented on issue #%s(%s): %s' %
                         (repo, commenter, number, title, comment))
-        elif action == 'edited':
-            for t in self.bot.subscribers[repo]:
-                self.bot.say(t, '[%s] %s updated h{is,er} comment in issue #%s(%s): %s' %
-                        (repo, commenter, number, title, comment))
+        # elif action == 'edited':
+        #     for t in self.bot.subscribers[repo]:
+        #         self.bot.say(t, '[%s] %s updated h{is,er} comment in issue #%s(%s): %s' %
+        #                 (repo, commenter, number, title, comment))
 
 
     def event_issues(self, data):
@@ -109,15 +153,14 @@ class MainHandler(web.RequestHandler):
                     (repo, pusher, branch))
             for commit in data['commits']:
                 _id = commit['id'][:7]
-                author = commit['author']['name']
+                # author = commit['author']['name']
                 msg = commit['message'] # Shorten it plz
-                self.bot.say(t, "- %s by %s: %s" %
-                        (_id, author, msg))
+                self.bot.say(t, "- %s %s" % (_id, msg))
 
 
 class GithubBot(Bot):
     targets = ['#srain']
-    restart = False
+    reload = False
     subscribers = {
             'SilverRainZ/srain': targets,
             'SilverRainZ/github-webhook-test': targets,
@@ -126,7 +169,7 @@ class GithubBot(Bot):
 
     def init(self):
         app = web.Application([
-            (r'/', MainHandler, { 'bot': self }),
+            (r'/', WebHookHandler, { 'bot': self }),
             ])
         app.listen(30512)
 
