@@ -149,7 +149,7 @@ class WebHookHandler(web.RequestHandler):
 
     def event_push(self, data):
         repo = data['repository']['full_name']
-        branch = data['ref']
+        branch = data['ref'].split('/')[2]
         pusher = data['pusher']['name']
         for t in self.bot.subscribers[repo]:
             self.bot.say(t, "[%s] %s push to branch %s" %
