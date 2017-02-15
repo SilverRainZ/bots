@@ -1,11 +1,15 @@
 Bots
 ====
 
-My bots which run on [LABots](https://github.com/lastavenger/labots).
+My bots which run on [LABots](https://github.com/SilverRainZ/labots).
 
 
 Bot List
 --------
 
-- log
-- tee
+- tee.py: Get Teeworlds server information
+- log.py: IRC log
+- seen.py: Last seen query & letter service
+- sm.py: Tag bot
+- 110.py: 歪妖妖零吗？帮我点一份猪扒饭
+- github.py: Github event notification
