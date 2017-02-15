@@ -2,9 +2,9 @@
 
 import json
 import logging
+from netaddr import IPNetwork, IPAddress
 from labots.bot import Bot
 from tornado import web, escape, httpclient
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,11 @@ class WebHookHandler(web.RequestHandler):
         try:
             response = http_client.fetch(http_request)
             meta = json.loads(response.body)
-            hookips = [ip.split('/')[0] for ip in meta['hooks']]
-            return (ip in hookips)
+            cidrs = meta['hooks']
+            ipaddr = IPAddress(ip)
+            for cidr in cidrs:
+                if ipaddr in IPNetwork(cidr):
+                    return True
         except httpclient.HTTPError as e:
             logger.error("HTTPError: %s %s", api, str(e))
         except json.JSONDecodeError as e:
