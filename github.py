@@ -108,10 +108,12 @@ class WebHookHandler(web.RequestHandler):
         title = data["issue"]['title']
         comment= data['comment']['body']
         commenter = data['comment']['user']['login']
+        url = data['comment']['html_url']
         if action == 'created':
             for t in self.bot.subscribers[repo]:
-                self.bot.say(t, '[%s] %s commented on issue #%s(%s): %s' %
-                        (repo, commenter, number, title, comment))
+                self.bot.say(t, '[%s] %s commented on issue #%s: %s <%s>' %
+                        (repo, commenter, number, title, url))
+                self.bot.say(t, msg)
         # elif action == 'edited':
         #     for t in self.bot.subscribers[repo]:
         #         self.bot.say(t, '[%s] %s updated h{is,er} comment in issue #%s(%s): %s' %
@@ -124,9 +126,10 @@ class WebHookHandler(web.RequestHandler):
         title = data["issue"]['title']
         sender = data['sender']['login'] # What diff from data['user'] ?
         number = data['issue']['number']
+        url = data['issue']['html_url']
         for t in self.bot.subscribers[repo]:
-            self.bot.say(t, '[%s] %s %s issue #%s: %s' %
-                    (repo, sender, action, number, title))
+            self.bot.say(t, '[%s] %s %s issue #%s: %s <%s>' %
+                    (repo, sender, action, number, title, url))
 
 
     def event_pull_request(self, data):
@@ -136,6 +139,7 @@ class WebHookHandler(web.RequestHandler):
         title = data["pull_request"]['title']
         sender = data['sender']['login']
         merged = data['pull_request']['merged']
+        url = data['pull_request']['html_url']
         if action == 'closed' and merged:
             action = 'merged'
         if action == 'opened' \
@@ -143,8 +147,8 @@ class WebHookHandler(web.RequestHandler):
                 or action == 'closed' \
                 or action == 'merged':
             for t in self.bot.subscribers[repo]:
-                self.bot.say(t, "[%s] %s %s pull request #%s: %s" %
-                        (repo, sender, action, number, title))
+                self.bot.say(t, "[%s] %s %s pull request #%s: %s <%s>" %
+                        (repo, sender, action, number, title, url))
 
 
     def event_push(self, data):
@@ -157,8 +161,9 @@ class WebHookHandler(web.RequestHandler):
             for commit in data['commits']:
                 _id = commit['id'][:7]
                 # author = commit['author']['name']
-                msg = commit['message'] # Shorten it plz
-                self.bot.say(t, "- %s %s" % (_id, msg))
+                url = commit['url']
+                msg = commit['message'].replace('\n', '\n  \t')
+                self.bot.say(t, "- %s %s \n  <%s>" % (_id, msg, url))
 
 
 class GithubBot(Bot):
