@@ -1,0 +1,8 @@
+{
+    "targets": ["#srain"],
+    "subscribers": {
+        "SilverRainZ/srain": ["#srain"],
+        "SilverRainZ/labots": ["#srain"],
+        "SilverRainZ/bots": ["#srain"]
+    }
+}

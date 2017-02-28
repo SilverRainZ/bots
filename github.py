@@ -33,13 +33,13 @@ class WebHookHandler(web.RequestHandler):
                 if ipaddr in IPNetwork(cidr):
                     return True
         except httpclient.HTTPError as e:
-            logger.error("HTTPError: %s %s", api, str(e))
+            logger.error('HTTPError: %s %s', api, str(e))
         except json.JSONDecodeError as e:
-            logger.error("JSONDecodeError: %s", str(e))
+            logger.error('JSONDecodeError: %s', str(e))
         except KeyError as e:
-            logger.error("KeyError: %s", str(e))
+            logger.error('KeyError: %s', str(e))
         except Exception as e:
-            logger.error("%s", str(e))
+            logger.error('%s', str(e))
         http_client.close()
 
         return False
@@ -55,10 +55,10 @@ class WebHookHandler(web.RequestHandler):
         else:
             logger.info('Webhook IP %s', ip)
 
-        content_type = self.request.headers.get("Content-Type")
+        content_type = self.request.headers.get('Content-Type')
         if content_type != 'application/json':
             return
-        event = self.request.headers.get("X-GitHub-Event")
+        event = self.request.headers.get('X-GitHub-Event')
         try:
             data = json.loads(self.request.body)
         except json.JSONDecodeError as e:
@@ -105,7 +105,7 @@ class WebHookHandler(web.RequestHandler):
         repo = data['repository']['full_name']
         action = data['action']
         number = data['issue']['number']
-        title = data["issue"]['title']
+        title = data['issue']['title']
         comment= data['comment']['body']
         commenter = data['comment']['user']['login']
         url = data['comment']['html_url']
@@ -123,7 +123,7 @@ class WebHookHandler(web.RequestHandler):
     def event_issues(self, data):
         repo = data['repository']['full_name']
         action = data['action']
-        title = data["issue"]['title']
+        title = data['issue']['title']
         sender = data['sender']['login'] # What diff from data['user'] ?
         number = data['issue']['number']
         url = data['issue']['html_url']
@@ -136,7 +136,7 @@ class WebHookHandler(web.RequestHandler):
         repo = data['repository']['full_name']
         action = data['action']
         number = data['pull_request']['number']
-        title = data["pull_request"]['title']
+        title = data['pull_request']['title']
         sender = data['sender']['login']
         merged = data['pull_request']['merged']
         url = data['pull_request']['html_url']
@@ -147,7 +147,7 @@ class WebHookHandler(web.RequestHandler):
                 or action == 'closed' \
                 or action == 'merged':
             for t in self.bot.subscribers[repo]:
-                self.bot.say(t, "[%s] %s %s pull request #%s: %s <%s>" %
+                self.bot.say(t, '[%s] %s %s pull request #%s: %s <%s>' %
                         (repo, sender, action, number, title, url))
 
 
@@ -156,26 +156,31 @@ class WebHookHandler(web.RequestHandler):
         branch = data['ref'].split('/')[2]
         pusher = data['pusher']['name']
         for t in self.bot.subscribers[repo]:
-            self.bot.say(t, "[%s] %s push to branch %s" %
+            self.bot.say(t, '[%s] %s push to branch %s' %
                     (repo, pusher, branch))
             for commit in data['commits']:
                 _id = commit['id'][:7]
                 # author = commit['author']['name']
                 url = commit['url']
-                msg = commit['message'].replace('\n', '\n  \t')
-                self.bot.say(t, "- %s %s \n  <%s>" % (_id, msg, url))
+                msg = commit['message'].split('\n')
+                prefix = '* %s ' % (_id)
+                indent = len(prefix) * ' '
+                self.bot.say(t,  prefix + msg[0])
+                for i in range(1, len(msg)):
+                    if (msg[i]):
+                        self.bot.say(t, indent + msg[i])
+                self.bot.say(t, indent + '<%s>' % url)
 
 
 class GithubBot(Bot):
-    targets = ['#srain']
+    targets = []
     reload = False
-    subscribers = {
-            'SilverRainZ/srain': targets,
-            'SilverRainZ/github-webhook-test': targets,
-            # 'baxterthehacker/public-repo': targets,
-            }
+    subscribers = {}
 
     def init(self):
+        self.targets = self.config['targets']
+        self.subscribers = self.config['subscribers']
+
         app = web.Application([
             (r'/', WebHookHandler, { 'bot': self }),
             ])
