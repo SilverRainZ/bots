@@ -178,7 +178,7 @@ class TeeBot(Bot):
             elif sub_cmd == 'player':
                 player = words[2] if words[2:] else ''
                 if not player:
-                    reply = 'Missing palyer name'
+                    reply = 'Missing player name'
                 else:
                     reply = player_info(self.srv, player)
             else:
