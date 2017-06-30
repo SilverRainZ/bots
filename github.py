@@ -4,7 +4,7 @@ import json
 import logging
 from netaddr import IPNetwork, IPAddress
 from labots.bot import Bot
-from tornado import web, escape, httpclient
+from tornado import web, escape, httpclient, httpserver, netutil
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +80,7 @@ class WebHookHandler(web.RequestHandler):
                 self.event_push(data)
         except KeyError as e:
             logger.error('KeyError: %s', str(e))
+
 
     def event_create(self, data):
         repo = data['repository']['full_name']
@@ -174,7 +175,7 @@ class WebHookHandler(web.RequestHandler):
 
 class GithubBot(Bot):
     targets = []
-    reload = False
+    reload = True
     subscribers = {}
 
     def init(self):
@@ -184,7 +185,9 @@ class GithubBot(Bot):
         app = web.Application([
             (r'/', WebHookHandler, { 'bot': self }),
             ])
-        app.listen(30512)
+        sockets = netutil.bind_sockets(30512, reuse_port = True)
+        server = httpserver.HTTPServer(app)
+        server.add_sockets(sockets)
 
     def finalize(self):
         pass
