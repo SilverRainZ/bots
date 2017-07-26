@@ -71,7 +71,8 @@ class WebHookHandler(web.RequestHandler):
             elif event == 'delete':
                 self.event_delete(data)
             elif event == 'issue_comment':
-                self.event_issue_comment(data)
+                # self.event_issue_comment(data)
+                return
             elif event == 'issues':
                 self.event_issues(data)
             elif event == 'pull_request':
@@ -128,6 +129,8 @@ class WebHookHandler(web.RequestHandler):
         sender = data['sender']['login'] # What diff from data['user'] ?
         number = data['issue']['number']
         url = data['issue']['html_url']
+        if action not in ['opened', 'closed']:
+            return
         for t in self.bot.subscribers[repo]:
             self.bot.say(t, '[%s] %s %s issue #%s: %s <%s>' %
                     (repo, sender, action, number, title, url))
@@ -156,13 +159,16 @@ class WebHookHandler(web.RequestHandler):
         repo = data['repository']['full_name']
         branch = data['ref'].split('/')[2]
         pusher = data['pusher']['name']
+        url = data['compare']
+        if branch not in ['master']:
+            return
         for t in self.bot.subscribers[repo]:
-            self.bot.say(t, '[%s] %s push to branch %s' %
-                    (repo, pusher, branch))
+            self.bot.say(t, '[%s] %s push to branch %s < %s >' %
+                    (repo, pusher, branch, url))
             for commit in data['commits']:
                 _id = commit['id'][:7]
                 # author = commit['author']['name']
-                url = commit['url']
+                # url = commit['url']
                 msg = commit['message'].split('\n')
                 prefix = '* %s ' % (_id)
                 indent = len(prefix) * ' '
@@ -170,7 +176,6 @@ class WebHookHandler(web.RequestHandler):
                 for i in range(1, len(msg)):
                     if (msg[i]):
                         self.bot.say(t, indent + msg[i])
-                self.bot.say(t, indent + '<%s>' % url)
 
 
 class GithubBot(Bot):
