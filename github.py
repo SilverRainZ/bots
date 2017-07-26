@@ -15,7 +15,7 @@ class WebHookHandler(web.RequestHandler):
         self.bot = bot
 
     def check_source(self, ip):
-        api = 'http://api.github.com/meta'
+        api = 'https://api.github.com/meta'
         http_header = { 'User-Agent' : 'Mozilla/5.0 \
                 (X11; Linux x86_64; rv:51.0) \
                 Gecko/20100101 Firefox/51.0' }
