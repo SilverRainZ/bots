@@ -6,31 +6,23 @@
 # @date 2016-10-04
 
 
-import os
-import json
+import labots
 from random import randint
-from labots.bot import Bot
 
-class SMBot(Bot):
-    targets = []
+class SMBot(labots.Bot):
     usage = '.sm[.<count>|.all] <nick> [tag]; i.e: .sm LQYMGT, .sm.2 LQYMGT .sm.all LQYMGT, .lqymgt, .lqymgtf .刘青云'
 
     n = 0
     data = {}
-    data_file = None
 
     def init(self):
         self.targets = self.config['targets']
-        self.data_file = self.config['data']
-
-        with open(self.data_file, 'r') as f:
-            self.data = json.loads(f.read())
+        self.data = self.storage.get('data') or {}
 
     def finalize(self):
-        with open(self.data_file, 'w') as f:
-            json.dump(self.data, f, ensure_ascii = False, indent = 4)
+        self.storage['data'] = self.data
 
-    def on_LABOTS_MSG(self, target, bot, nick, msg):
+    def on_channel_message(self, origin: str, channel: str, msg: str):
         words = list(filter(lambda e: e, msg.split(' ', maxsplit = 2)))
 
         # Command alias
@@ -48,12 +40,12 @@ class SMBot(Bot):
                 if self.data.get(name):
                     if not tag in self.data[name]:
                         self.data[name].append(tag)
-                        self.say(target, '%s: Pushed!' % (nick))
+                        self.action.message(channel, '%s: Pushed!' % (origin))
                     else:
-                        self.say(target, '%s: Tag already exist' % nick)
+                        self.action.message(channel, '%s: Tag already exist' % origin)
                 else:
                     self.data[name] = [tag]
-                    self.say(target, '%s: Pushed!' % nick)
+                    self.action.message(channel, '%s: Pushed!' % origin)
             # Query
             elif len(words) == 2:
                 subcmd = words[0][4:]
@@ -63,7 +55,7 @@ class SMBot(Bot):
                     if not tags:
                         raise KeyError
                 except KeyError:
-                    self.say(target, '%s: No data' % nick)
+                    self.action.message(channel, '%s: No data' % origin)
                     return
 
                 if subcmd:
@@ -75,15 +67,14 @@ class SMBot(Bot):
                         except ValueError:
                             count = 1
                     for i in range(0, count):
-                        self.say(target, '%s: %s' % (nick,tags[i]))
+                        self.action.message(channel, '%s: %s' % (origin,tags[i]))
                 else:
                     n = randint(0, len(tags) - 1)
                     while n == self.n and len(tags) != 1:
                         n = randint(0, len(tags) - 1)
                     self.n = n
-                    self.say(target, '%s: %s' % (nick,tags[n]))
+                    self.action.message(channel, '%s: %s' % (origin,tags[n]))
             else:
-                self.say(target, '%s: Usage: .sm <nick> [tag]' % nick)
+                self.action.message(channel, '%s: Usage: .sm <nick> [tag]' % origin)
 
-
-bot = SMBot(__file__)
+labots.register(SMBot)
