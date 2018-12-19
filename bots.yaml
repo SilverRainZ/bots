@@ -1,0 +1,34 @@
+"110":
+    targets:
+        - "#archlinux-cn-offtopic"
+
+github:
+    targets:
+        - "#srain"
+    subscribers:
+        SilverRainZ/srain:
+            - "#srain"
+        SilverRainZ/labots:
+            - "#srain"
+        SilverRainZ/bots:
+            - "#srain"
+
+log:
+    targets:
+        - "#lasttest"
+    time_zone: Asia/Shanghai,
+
+seen:
+    targets:
+        - "#lasttest"
+
+sm:
+    targets:
+        - "#lasttest"
+
+tee:
+    targets:
+        - "#srain"
+    host: 127.0.0.1
+    port: 8303
+    alias: Arch Tee Server

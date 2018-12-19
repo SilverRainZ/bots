@@ -5,19 +5,10 @@
 #   <https://www.teeworlds.com/forum/viewtopic.php?id=7737>
 # Supports teeworlds_srv 0.6.x
 
-import sys
-import socket
 import logging
-from labots.bot import Bot
+import socket
+import labots
 
-# Initialize logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-tee_server = ''
-tee_alias = ''
-tee_port = 0
-    
 region_map = {
         '-1':'default', '901':'XEN', '902':'XNI', '903':'XSC', '904':'XWA',
         '737':'SS', '4':'AF', '248':'AX', '8':'AL', '12':'DZ', '16':'AS',
@@ -64,27 +55,28 @@ region_map = {
         } 
 
 
-class TeeServer:
+class TeeServer():
     sock = None
-    ip = ''
+    host = ''
     port = 0
+    alias = ''
     version = ''
     name = ''
-    alias = ''
     map_name = ''
     mode = ''
     cur_player_num = 0
     max_player_num = 0
     players = []
 
-    def __init__(self, server, port, alias):
+    def __init__(self, host, port, alias,
+            logger = logging.getLogger(__name__)):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.connect((server, port))
+        self.sock.connect((host, port))
         self.sock.settimeout(10)
-        self.alias = alias
-        self.ip = server
+        self.host = host
         self.port = port
-        logger.info('connect to %s:%s' % (server, port))
+        self.alias = alias
+        self.logger = logger
 
 
     def update(self):
@@ -95,7 +87,7 @@ class TeeServer:
             info[0] = b'NULL'
             info = [x.decode('utf-8') for x in info]
 
-            logger.debug('recv data: %s' % info)
+            self.logger.debug('recv data: %s' % info)
             self.version = info[1]
             self.name = info[2]
             self.map_name = info[3]
@@ -116,77 +108,70 @@ class TeeServer:
                         'score':    info[base+13],
                         'stat':     ['spectator', 'player'][int(info[base+14])],
                         }
-                logger.debug('player: %s'% player)
+                self.logger.debug('player: %s'% player)
                 self.players.append(player)
             return True
         except socket.error as err:
-            logger.error('SOCKET ERROR %s' % err)
+            self.logger.error('SOCKET ERROR %s' % err)
         except (UnicodeDecodeError, IndexError, ValueError) as err:
-            logger.error('UNRECOGNIZED DATA %s' % err)
+            self.logger.error('UNRECOGNIZED DATA %s' % err)
         return False
 
 
     def stop(self):
-        logger.info('Stop')
         self.sock.close()
 
 
 
-class TeeBot(Bot):
-    targets = []
+class TeeBot(labots.Bot):
     usage = ('.tee: get players list;'
              '.tee server: get server info;'
              '.tee player <playername>: get player info;'
              )
-
     srv = None
-
+    host = None
+    port = None
 
     def init(self):
-        global tee_server
-        global tee_alias
-        global tee_port
-
         self.targets = self.config['targets']
-        tee_server = self.config['tee_server']
-        tee_alias = self.config['tee_alias']
-        tee_port = self.config['tee_port']
-
-        self.srv = TeeServer(tee_server, tee_port, tee_alias)
+        self.host = self.config['host']
+        self.port = self.config['port']
+        self.alias = self.config['alias']
+        self.srv = TeeServer(self.host, self.port, self.alias, logger = self.logger) 
 
     def finalize(self):
         self.srv.stop()
 
-    def on_LABOTS_MSG(self, target, bot, nick, msg):
+    def on_channel_message(self, origin: str, channel: str, msg: str):
         cmd = '.tee'
-        if msg.startswith(cmd):
-            reply = ''
-            words = list(filter(lambda e: e, msg.split(' ')))
+        if not msg.startswith(cmd):
+            return
 
-            sub_cmd = words[1] if words[1:] else ''
+        reply = ''
+        words = list(filter(lambda e: e, msg.split(' ')))
 
-            if sub_cmd == 'help':
-                self.say(target, help())
-                return
+        sub_cmd = words[1] if words[1:] else ''
 
-            if not self.srv.update():
-                self.say(target, '%s: failed to update server info' % nick)
-                return
+        if sub_cmd == 'help':
+            self.action.message(channel, help())
+            return
 
-            if sub_cmd == 'server':
-                reply = server_info(self.srv)
-            elif sub_cmd == 'player':
-                player = words[2] if words[2:] else ''
-                if not player:
-                    reply = 'Missing player name'
-                else:
-                    reply = player_info(self.srv, player)
+        if not self.srv.update():
+            self.action.message(channel, '%s: failed to update server info' % origin)
+            return
+
+        if sub_cmd == 'server':
+            reply = server_info(self.srv)
+        elif sub_cmd == 'player':
+            player = words[2] if words[2:] else ''
+            if not player:
+                reply = 'Missing player name'
             else:
-                reply = players_list(self.srv)
+                reply = player_info(self.srv, player)
+        else:
+            reply = players_list(self.srv)
 
-            self.say(target, '%s: %s' % (nick, reply))
-
-
+        self.action.message(channel, '%s: %s' % (origin, reply))
 
 def players_list(srv):
     return '%s/%s people(s) in %s: %s' % (
@@ -208,7 +193,7 @@ def player_info(srv, name):
 
 def server_info(srv):
     return '%s, version: %s, address: %s:%s gamemode: %s, map: %s, players: %s/%s' % (
-            srv.name, srv.version, srv.ip, srv.port, srv.mode, srv.map_name,
+            srv.name, srv.version, srv.host, srv.port, srv.mode, srv.map_name,
             srv.cur_player_num, srv.max_player_num
             )
 
@@ -220,5 +205,4 @@ def help():
             '`.tee help` => get this message.'
             )
 
-
-bot = TeeBot(__file__)
+labots.register(TeeBot)

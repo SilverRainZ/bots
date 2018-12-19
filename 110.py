@@ -1,9 +1,8 @@
 # -*- encoding: UTF-8 -*-
 # 我要报警啦！
 
-import json
 from random import randint
-from labots.bot import Bot
+import labots
 
 def gen(locale, person):
     msg = [ '歪妖妖灵吗？帮%s点一份猪扒饭' % person,
@@ -20,8 +19,7 @@ def gen(locale, person):
 
     return msg[n]
 
-class CallPoliceBot(Bot):
-    targets = []
+class CallPoliceBot(labots.Bot):
     usage = '.110 <nick>'
 
     def init(self):
@@ -31,14 +29,14 @@ class CallPoliceBot(Bot):
     def finalize(self):
         pass
 
-    def on_LABOTS_MSG(self, target, bot, nick, msg):
-        cmd = '.110'
-        if msg.startswith(cmd):
-            words = list(filter(lambda e: e, msg.split(' ', maxsplit = 2)))
-            if words[1:]:
-                person = words[1]
-            else:
-                person = '我'
-            self.say(target, gen(target, person))
+    def on_channel_message(self, origin: str, channel: str, msg: str):
+        if not msg.startswith('.110'):
+            return
+        words = list(filter(lambda e: e, msg.split(' ', maxsplit = 2)))
+        if words[1:]:
+            person = words[1]
+        else:
+            person = '我'
+        self.action.message(channel, gen(origin, person))
 
-bot = CallPoliceBot(__file__)
+labots.register(CallPoliceBot)

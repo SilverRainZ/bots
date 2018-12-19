@@ -1,61 +1,45 @@
 # -*- encoding: UTF-8 -*-
 # Seen And Tell => SAT
 
-import os
-import json
+import labots
 from time import strftime
 
-from labots.bot import Bot
-
-# TODO: DON'T USE GLOBAL VARIBLE
-
-
-class SeenAndTellBot(Bot):
-    targets = []
+class SeenAndTellBot(labots.Bot):
     usage = '.seen <nick>; .tell <nick> <msg>'
 
-    cache_file = ''
     last_msgs = {}
     untell_msgs = {}
 
     def init(self):
-
         self.targets = self.config['targets']
-        self.cache_file = self.config['cache']
-
-        with open(self.cache_file, 'r') as f:
-            cache = json.loads(f.read())
-            self.last_msgs = cache['last_msgs']
-            self.untell_msgs = cache['untell_msgs']
-
+        self.last_msgs = self.storage.get('last_msgs') or {}
+        self.untell_msgs = self.storage.get('untell_msgs') or {}
 
     def finalize(self):
-        with open(self.cache_file, 'w') as f:
-            json.dump(
-                    { 'last_msgs': self.last_msgs, 'untell_msgs': self.untell_msgs },
-                    f, ensure_ascii = False, indent = 4)
+        self.storage['last_msgs'] = self.last_msgs
+        self.storage['untell_msgs'] = self.untell_msgs
 
-    def on_LABOTS_MSG(self, target, bot, nick, msg):
+    def on_channel_message(self, origin: str, channel: str, msg: str):
         # Record one's last message
-        last_msg = self.last_msgs[nick] = {}
+        last_msg = self.last_msgs[origin] = {}
 
         last_msg['time'] = strftime("%Y-%m-%d %H:%M:%S")
         last_msg['msg'] = msg
-        last_msg['channel'] = target
+        last_msg['channel'] = channel
 
         # Whether there is any message to tell
-        if self.untell_msgs.get(nick):
-            untell_msg_list = self.untell_msgs[nick]
+        if self.untell_msgs.get(origin):
+            untell_msg_list = self.untell_msgs[origin]
             for untell_msg in untell_msg_list:
-                self.say(target,
+                self.action.message(channel,
                         '%s: %s told you: %s at %s in %s' % (
-                            nick,
+                            origin,
                             untell_msg['sender'],
                             untell_msg['msg'],
                             untell_msg['time'],
                             untell_msg['channel']
                             ))
-            self.untell_msgs[nick] = []
+            self.untell_msgs[origin] = []
 
         # .seen command
         if msg.startswith('.seen'):
@@ -64,7 +48,7 @@ class SeenAndTellBot(Bot):
                 person = words[1]
                 if self.last_msgs.get(person):
                     msg = self.last_msgs[person]
-                    if msg['channel'] == target:
+                    if msg['channel'] == channel:
                         ret_msg = 'I last saw %s at %s in here, saying %s .' % (
                                 person, msg['time'], msg['msg'])
                     else:
@@ -74,7 +58,7 @@ class SeenAndTellBot(Bot):
                     ret_msg = 'I haven\'t seen %s recently.' % person
             else:
                 ret_msg = 'Usage: .seen <nick>'
-            self.say(target, nick + ': ' + ret_msg)
+            self.action.message(channel, origin + ': ' + ret_msg)
 
         # .tell command
         elif msg.startswith('.tell'):
@@ -86,15 +70,15 @@ class SeenAndTellBot(Bot):
 
                 if self.untell_msgs.get(person):
                     self.untell_msgs[person].append({
-                            'sender': nick,
-                            'channel': target,
+                            'sender': origin,
+                            'channel': channel,
                             'time': time,
                             'msg': pass_msg
                             })
                 else:
                     self.untell_msgs[person] = [{
-                            'sender': nick,
-                            'channel': target,
+                            'sender': origin,
+                            'channel': channel,
                             'time': time,
                             'msg': pass_msg
                             }]
@@ -103,8 +87,6 @@ class SeenAndTellBot(Bot):
             else:
                 ret_msg = 'Usage: .tell <nick> <msg>'
 
-            self.say(target, nick + ': ' + ret_msg)
+            self.action.message(channel, origin + ': ' + ret_msg)
 
-
-
-bot = SeenAndTellBot(__file__)
+labots.register(SeenAndTellBot)

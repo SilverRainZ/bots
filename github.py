@@ -1,12 +1,9 @@
 # -*- encoding: UTF-8 -*-
 
+import labots
 import json
-import logging
 from netaddr import IPNetwork, IPAddress
-from labots.bot import Bot
-from tornado import web, escape, httpclient, httpserver, netutil
-
-logger = logging.getLogger(__name__)
+from tornado import web, httpclient, httpserver, netutil
 
 class WebHookHandler(web.RequestHandler):
     bot = None
@@ -33,13 +30,13 @@ class WebHookHandler(web.RequestHandler):
                 if ipaddr in IPNetwork(cidr):
                     return True
         except httpclient.HTTPError as e:
-            logger.error('HTTPError: %s %s', api, str(e))
+            self.bot.logger.error('HTTPError: %s %s', api, str(e))
         except json.JSONDecodeError as e:
-            logger.error('JSONDecodeError: %s', str(e))
+            self.bot.logger.error('JSONDecodeError: %s', str(e))
         except KeyError as e:
-            logger.error('KeyError: %s', str(e))
+            self.bot.logger.error('KeyError: %s', str(e))
         except Exception as e:
-            logger.error('%s', str(e))
+            self.bot.logger.error('%s', str(e))
         http_client.close()
 
         return False
@@ -50,10 +47,10 @@ class WebHookHandler(web.RequestHandler):
         if not ip:
             return
         if not self.check_source(ip):
-            logger.warn('Untrusted IP %s, ignored', ip)
+            self.bot.logger.warn('Untrusted IP %s, ignored', ip)
             return
         else:
-            logger.info('Webhook IP %s', ip)
+            self.bot.logger.info('Webhook IP %s', ip)
 
         content_type = self.request.headers.get('Content-Type')
         if content_type != 'application/json':
@@ -62,7 +59,7 @@ class WebHookHandler(web.RequestHandler):
         try:
             data = json.loads(self.request.body)
         except json.JSONDecodeError as e:
-            logger.error('JSONDecodeError: %s', str(e))
+            self.bot.logger.error('JSONDecodeError: %s', str(e))
             return
 
         try:
@@ -80,7 +77,7 @@ class WebHookHandler(web.RequestHandler):
             elif event == 'push':
                 self.event_push(data)
         except KeyError as e:
-            logger.error('KeyError: %s', str(e))
+            self.bot.logger.error('KeyError: %s', str(e))
 
 
     def event_create(self, data):
@@ -89,7 +86,7 @@ class WebHookHandler(web.RequestHandler):
         ref = data['ref']
         sender = data['sender']['login']
         for t in self.bot.subscribers[repo]:
-            self.bot.say(t, '[%s] %s created %s %s' %
+            self.bot.action.message(t, '[%s] %s created %s %s' %
                     (repo, sender, _type, ref))
 
 
@@ -99,7 +96,7 @@ class WebHookHandler(web.RequestHandler):
         ref = data['ref']
         sender = data['sender']['login']
         for t in self.bot.subscribers[repo]:
-            self.bot.say(t, '[%s] %s deleted %s %s' %
+            self.bot.action.message(t, '[%s] %s deleted %s %s' %
                     (repo, sender, _type, ref))
 
 
@@ -108,17 +105,16 @@ class WebHookHandler(web.RequestHandler):
         action = data['action']
         number = data['issue']['number']
         title = data['issue']['title']
-        comment= data['comment']['body']
+        # comment= data['comment']['body']
         commenter = data['comment']['user']['login']
         url = data['comment']['html_url']
         if action == 'created':
             for t in self.bot.subscribers[repo]:
-                self.bot.say(t, '[%s] %s commented on issue #%s: %s <%s>' %
+                self.bot.action.message(t, '[%s] %s commented on issue #%s: %s <%s>' %
                         (repo, commenter, number, title, url))
-                self.bot.say(t, msg)
         # elif action == 'edited':
         #     for t in self.bot.subscribers[repo]:
-        #         self.bot.say(t, '[%s] %s updated h{is,er} comment in issue #%s(%s): %s' %
+        #         self.bot.action.message(t, '[%s] %s updated h{is,er} comment in issue #%s(%s): %s' %
         #                 (repo, commenter, number, title, comment))
 
 
@@ -132,7 +128,7 @@ class WebHookHandler(web.RequestHandler):
         if action not in ['opened', 'closed']:
             return
         for t in self.bot.subscribers[repo]:
-            self.bot.say(t, '[%s] %s %s issue #%s: %s <%s>' %
+            self.bot.action.message(t, '[%s] %s %s issue #%s: %s <%s>' %
                     (repo, sender, action, number, title, url))
 
 
@@ -151,7 +147,7 @@ class WebHookHandler(web.RequestHandler):
                 or action == 'closed' \
                 or action == 'merged':
             for t in self.bot.subscribers[repo]:
-                self.bot.say(t, '[%s] %s %s pull request #%s: %s <%s>' %
+                self.bot.action.message(t, '[%s] %s %s pull request #%s: %s <%s>' %
                         (repo, sender, action, number, title, url))
 
 
@@ -163,7 +159,7 @@ class WebHookHandler(web.RequestHandler):
         if branch not in ['master']:
             return
         for t in self.bot.subscribers[repo]:
-            self.bot.say(t, '[%s] %s push to branch %s < %s >' %
+            self.bot.action.message(t, '[%s] %s push to branch %s < %s >' %
                     (repo, pusher, branch, url))
             for commit in data['commits']:
                 _id = commit['id'][:7]
@@ -172,16 +168,14 @@ class WebHookHandler(web.RequestHandler):
                 msg = commit['message'].split('\n')
                 prefix = '* %s ' % (_id)
                 indent = len(prefix) * ' '
-                self.bot.say(t,  prefix + msg[0])
+                self.bot.action.message(t,  prefix + msg[0])
                 for i in range(1, len(msg)):
                     if (msg[i]):
-                        self.bot.say(t, indent + msg[i])
+                        self.bot.action.message(t, indent + msg[i])
 
 
-class GithubBot(Bot):
-    targets = []
-    reload = True
-    subscribers = {}
+class GithubBot(labots.Bot):
+    reload = True # FIXME: not supported
 
     def init(self):
         self.targets = self.config['targets']
@@ -198,4 +192,4 @@ class GithubBot(Bot):
         pass
 
 
-bot = GithubBot(__file__)
+labots.register(GithubBot)
