@@ -13,14 +13,12 @@ class SMBot(labots.Bot):
     usage = '.sm[.<count>|.all] <nick> [tag]; i.e: .sm LQYMGT, .sm.2 LQYMGT .sm.all LQYMGT, .lqymgt, .lqymgtf .刘青云'
 
     n = 0
-    data = {}
 
     def init(self):
         self.targets = self.config['targets']
-        self.data = self.storage.get('data') or {}
 
     def finalize(self):
-        self.storage['data'] = self.data
+        pass
 
     def on_channel_message(self, origin: str, channel: str, msg: str):
         words = list(filter(lambda e: e, msg.split(' ', maxsplit = 2)))
@@ -37,21 +35,21 @@ class SMBot(labots.Bot):
             # Add
             if len(words) == 3:
                 name, tag = words[1], words[2]
-                if self.data.get(name):
-                    if not tag in self.data[name]:
-                        self.data[name].append(tag)
+                if self.storage.get(name):
+                    if not tag in self.storage[name]:
+                        self.storage[name].append(tag)
                         self.action.message(channel, '%s: Pushed!' % (origin))
                     else:
                         self.action.message(channel, '%s: Tag already exist' % origin)
                 else:
-                    self.data[name] = [tag]
+                    self.storage[name] = [tag]
                     self.action.message(channel, '%s: Pushed!' % origin)
             # Query
             elif len(words) == 2:
                 subcmd = words[0][4:]
                 name = words[1]
                 try:
-                    tags = self.data[name]
+                    tags = self.storage[name]
                     if not tags:
                         raise KeyError
                 except KeyError:
