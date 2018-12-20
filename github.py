@@ -175,7 +175,7 @@ class WebHookHandler(web.RequestHandler):
 
 
 class GithubBot(labots.Bot):
-    reload = True # FIXME: not supported
+    sockets = []
 
     def init(self):
         self.targets = self.config['targets']
@@ -184,12 +184,14 @@ class GithubBot(labots.Bot):
         app = web.Application([
             (r'/', WebHookHandler, { 'bot': self }),
             ])
-        sockets = netutil.bind_sockets(30512, reuse_port = True)
+        self.sockets = netutil.bind_sockets(30512)
         server = httpserver.HTTPServer(app)
-        server.add_sockets(sockets)
+        server.add_sockets(self.sockets)
 
     def finalize(self):
-        pass
+        for s in self.sockets:
+            s.close()
+        self.sockets = []
 
 
 labots.register(GithubBot)
