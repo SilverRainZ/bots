@@ -3,15 +3,12 @@
         - "#archlinux-cn-offtopic"
 
 github:
+    listen_port: 30512
     targets:
-        - "#srain"
+        - "#labots"
     subscribers:
-        SilverRainZ/srain:
-            - "#srain"
-        SilverRainZ/labots:
-            - "#srain"
-        SilverRainZ/bots:
-            - "#srain"
+        baxterthehacker/public-repo:
+            - "#labots"
 
 log:
     targets:

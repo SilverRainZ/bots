@@ -1,6 +1,7 @@
 # -*- encoding: UTF-8 -*-
 
 import labots
+from labots import colorizer
 import json
 from netaddr import IPNetwork, IPAddress
 from tornado import web, httpclient, httpserver, netutil
@@ -12,6 +13,7 @@ class WebHookHandler(web.RequestHandler):
         self.bot = bot
 
     def check_source(self, ip):
+        return True
         api = 'https://api.github.com/meta'
         http_header = { 'User-Agent' : 'Mozilla/5.0 \
                 (X11; Linux x86_64; rv:51.0) \
@@ -50,7 +52,7 @@ class WebHookHandler(web.RequestHandler):
             self.bot.logger.warn('Untrusted IP %s, ignored', ip)
             return
         else:
-            self.bot.logger.info('Webhook IP %s', ip)
+            self.bot.logger.info('Trusted IP %s', ip)
 
         content_type = self.request.headers.get('Content-Type')
         if content_type != 'application/json':
@@ -62,22 +64,20 @@ class WebHookHandler(web.RequestHandler):
             self.bot.logger.error('JSONDecodeError: %s', str(e))
             return
 
-        try:
-            if event == 'create':
-                self.event_create(data)
-            elif event == 'delete':
-                self.event_delete(data)
-            elif event == 'issue_comment':
-                # self.event_issue_comment(data)
-                return
-            elif event == 'issues':
-                self.event_issues(data)
-            elif event == 'pull_request':
-                self.event_pull_request(data)
-            elif event == 'push':
-                self.event_push(data)
-        except KeyError as e:
-            self.bot.logger.error('KeyError: %s', str(e))
+        if event == 'create':
+            self.event_create(data)
+        elif event == 'delete':
+            self.event_delete(data)
+        elif event == 'issue_comment':
+            self.event_issue_comment(data)
+        elif event == 'issues':
+            self.event_issues(data)
+        elif event == 'pull_request':
+            self.event_pull_request(data)
+        elif event == 'push':
+            self.event_push(data)
+        elif event == 'push':
+            self.bot.logger.error('Unsupported event: %s', event)
 
 
     def event_create(self, data):
@@ -86,8 +86,8 @@ class WebHookHandler(web.RequestHandler):
         ref = data['ref']
         sender = data['sender']['login']
         for t in self.bot.subscribers[repo]:
-            self.bot.action.message(t, '[%s] %s created %s %s' %
-                    (repo, sender, _type, ref))
+            self.bot.action.message(t, '%s %s created %s %s' %
+                    (format_repo(repo), format_author(sender), _type, format_ref(ref)))
 
 
     def event_delete(self, data):
@@ -96,8 +96,8 @@ class WebHookHandler(web.RequestHandler):
         ref = data['ref']
         sender = data['sender']['login']
         for t in self.bot.subscribers[repo]:
-            self.bot.action.message(t, '[%s] %s deleted %s %s' %
-                    (repo, sender, _type, ref))
+            self.bot.action.message(t, '%s %s deleted %s %s' %
+                    (format_repo(repo), format_author(sender), _type, format_ref(ref)))
 
 
     def event_issue_comment(self, data):
@@ -110,8 +110,8 @@ class WebHookHandler(web.RequestHandler):
         url = data['comment']['html_url']
         if action == 'created':
             for t in self.bot.subscribers[repo]:
-                self.bot.action.message(t, '[%s] %s commented on issue #%s: %s <%s>' %
-                        (repo, commenter, number, title, url))
+                self.bot.action.message(t, '%s %s commented on issue %s: %s <%s>' %
+                        (format_repo(repo), format_author(commenter), format_issue(number), title, url))
         # elif action == 'edited':
         #     for t in self.bot.subscribers[repo]:
         #         self.bot.action.message(t, '[%s] %s updated h{is,er} comment in issue #%s(%s): %s' %
@@ -128,8 +128,8 @@ class WebHookHandler(web.RequestHandler):
         if action not in ['opened', 'closed']:
             return
         for t in self.bot.subscribers[repo]:
-            self.bot.action.message(t, '[%s] %s %s issue #%s: %s <%s>' %
-                    (repo, sender, action, number, title, url))
+            self.bot.action.message(t, '%s %s %s issue %s: %s <%s>' %
+                    (format_repo(repo), format_author(sender), action, format_issue(number), title, url))
 
 
     def event_pull_request(self, data):
@@ -142,37 +142,52 @@ class WebHookHandler(web.RequestHandler):
         url = data['pull_request']['html_url']
         if action == 'closed' and merged:
             action = 'merged'
-        if action == 'opened' \
-                or action == 'reopened' \
-                or action == 'closed' \
-                or action == 'merged':
+        if action in ['opened', 'reopened', 'closed', 'merged']:
             for t in self.bot.subscribers[repo]:
-                self.bot.action.message(t, '[%s] %s %s pull request #%s: %s <%s>' %
-                        (repo, sender, action, number, title, url))
+                self.bot.action.message(t, '%s %s %s pull request %s: %s <%s>' %
+                        (format_repo(repo), format_author(sender), action, format_issue(number), title, url))
 
 
     def event_push(self, data):
         repo = data['repository']['full_name']
-        branch = data['ref'].split('/')[2]
+        branch = data['ref']
         pusher = data['pusher']['name']
         url = data['compare']
-        if branch not in ['master']:
-            return
         for t in self.bot.subscribers[repo]:
-            self.bot.action.message(t, '[%s] %s push to branch %s < %s >' %
-                    (repo, pusher, branch, url))
+            self.bot.action.message(t, '%s %s pushed %s commit(s) to branch %s < %s >' %
+                    (format_repo(repo), format_author(pusher), highlight(len(data['commits'])), format_ref(branch), url))
+            # Only report commit details of master push event
             for commit in data['commits']:
-                _id = commit['id'][:7]
+                _id = format_commit_id(commit['id'])
                 # author = commit['author']['name']
                 # url = commit['url']
                 msg = commit['message'].split('\n')
-                prefix = '* %s ' % (_id)
-                indent = len(prefix) * ' '
-                self.bot.action.message(t,  prefix + msg[0])
-                for i in range(1, len(msg)):
-                    if (msg[i]):
-                        self.bot.action.message(t, indent + msg[i])
+                if len(msg) == 1:
+                    msg = msg[0]
+                else:
+                    msg = msg[0] + colorizer.style(' ...', fg = colorizer.colors.grey)
+                msg = '* %s %s' % (_id, msg)
+                self.bot.action.message(t, msg)
 
+def format_repo(repo):
+    return colorizer.style('[%s]' % repo, fg = colorizer.colors.green)
+
+def format_author(author):
+    return colorizer.style('@' + author, fg = colorizer.colors.blue)
+
+def format_commit_id(commit):
+    return colorizer.style(commit[:7], fg = colorizer.colors.orange)
+
+def format_issue(issue):
+    return colorizer.style('#%d' % issue, fg = colorizer.colors.orange)
+
+def format_ref(ref):
+    if ref.startswith('refs/heads/'):
+        ref = ref[len('refs/heads/'):]
+    return colorizer.style(ref, fg = colorizer.colors.orange)
+
+def highlight(keyword):
+    return colorizer.style(str(keyword), bold = True)
 
 class GithubBot(labots.Bot):
     sockets = []
@@ -184,7 +199,7 @@ class GithubBot(labots.Bot):
         app = web.Application([
             (r'/', WebHookHandler, { 'bot': self }),
             ])
-        self.sockets = netutil.bind_sockets(30512)
+        self.sockets = netutil.bind_sockets(self.config['listen_port'])
         server = httpserver.HTTPServer(app)
         server.add_sockets(self.sockets)
 
