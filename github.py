@@ -153,11 +153,16 @@ class WebHookHandler(web.RequestHandler):
         branch = data['ref']
         pusher = data['pusher']['name']
         url = data['compare']
+        commits = data['commits']
+        num_commits = len(commits)
+        # Ignore push event with 0 commit
+        if num_commits == 0:
+            return
         for t in self.bot.subscribers[repo]:
-            self.bot.action.message(t, '%s %s pushed %s commit(s) to branch %s < %s >' %
-                    (format_repo(repo), format_author(pusher), highlight(len(data['commits'])), format_ref(branch), url))
+            self.bot.action.message(t, '%s %s pushed %s commit(s) to branch %s <%s>' %
+                    (format_repo(repo), format_author(pusher), highlight(num_commits), format_ref(branch), url))
             # Only report commit details of master push event
-            for commit in data['commits']:
+            for commit in commits:
                 _id = format_commit_id(commit['id'])
                 # author = commit['author']['name']
                 # url = commit['url']
