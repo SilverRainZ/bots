@@ -13,7 +13,6 @@ class WebHookHandler(web.RequestHandler):
         self.bot = bot
 
     def check_source(self, ip):
-        return True
         api = 'https://api.github.com/meta'
         http_header = { 'User-Agent' : 'Mozilla/5.0 \
                 (X11; Linux x86_64; rv:51.0) \
@@ -161,7 +160,9 @@ class WebHookHandler(web.RequestHandler):
         for t in self.bot.subscribers[repo]:
             self.bot.action.message(t, '%s %s pushed %s commit(s) to branch %s <%s>' %
                     (format_repo(repo), format_author(pusher), highlight(num_commits), format_ref(branch), url))
-            # Only report commit details of master push event
+            # Only report commit details for push event of master
+            if not branch in ['master']:
+                continue
             for commit in commits:
                 _id = format_commit_id(commit['id'])
                 # author = commit['author']['name']
